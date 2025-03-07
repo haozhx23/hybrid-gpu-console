@@ -1,0 +1,56 @@
+{
+    "name": "HealthCheckContainer",
+    "image": "763104351884.dkr.ecr.us-west-1.amazonaws.com/pytorch-inference:2.6.0-gpu-py312-cu124-ubuntu22.04-ec2",
+    "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+            "awslogs-group": "/ecs/HealthCheckContainerLogs",
+            "mode": "non-blocking",
+            "awslogs-create-group": "true",
+            "max-buffer-size": "25m",
+            "awslogs-region": "us-east-1",
+            "awslogs-stream-prefix": "ecs"
+        }
+    },
+    "memoryReservation": 1024,
+    "resourceRequirements": [
+        {
+            "value": "4",
+            "type": "GPU"
+        }
+    ],
+    "portMappings": [
+        {
+            "containerPort": 2022,
+            "hostPort": 2022,
+            "protocol": "tcp"
+        }
+    ],
+    "entryPoint": ["/bin/sh"],
+    "command": ["AUTO_FILLIN"],
+    "mountPoints": [
+        {
+            "sourceVolume": "healthcheck",
+            "containerPath": "/healthcheck",
+            "readOnly": false
+        }
+    ],
+    "environment": [],
+    "volumesFrom": [],
+    "linuxParameters": {
+        "devices": [
+            {
+                "hostPath": "/dev/infiniband",
+                "containerPath": "/dev/infiniband",
+                "permissions": [
+                    "read",
+                    "write"
+                ]
+            }
+        ]
+    },
+    "systemControls": [],
+    "essential": true,
+    "privileged": true,
+    "cpu": 0
+}

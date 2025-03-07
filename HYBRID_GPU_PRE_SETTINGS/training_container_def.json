@@ -1,0 +1,85 @@
+{
+    "name": "TrainingContainer",
+    "image": "763104351884.dkr.ecr.us-east-1.amazonaws.com/djl-inference:0.32.0-lmi14.0.0-cu126",
+    "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+            "awslogs-group": "/ecs/TrainingContainerLogs",
+            "mode": "non-blocking",
+            "awslogs-create-group": "true",
+            "max-buffer-size": "25m",
+            "awslogs-region": "us-east-1",
+            "awslogs-stream-prefix": "ecs"
+        }
+    },
+    "memoryReservation": 8192,
+    "resourceRequirements": [
+        {
+            "value": "4",
+            "type": "GPU"
+        }
+    ],
+    
+    "portMappings": [
+        {
+            "containerPort": "UI_FILL",
+            "hostPort": "UI_FILL",
+            "protocol": "tcp"
+        }
+    ],
+    "entryPoint": ["/bin/sh"],
+    "command": ["AUTO_FILL"],
+    "mountPoints": [
+        {
+            "sourceVolume": "workspace",
+            "containerPath": "/workspace",
+            "readOnly": false
+        },
+        {
+            "sourceVolume": "mylustremodel",
+            "containerPath": "/model_files",
+            "readOnly": false
+        },
+        {
+            "sourceVolume": "mylustredata",
+            "containerPath": "/data_files",
+            "readOnly": false
+        },
+        {
+            "sourceVolume": "instancelocalstorage",
+            "containerPath": "/local_data",
+            "readOnly": false
+        },
+        {
+            "sourceVolume": "ssh-keys",
+            "containerPath": "/root/.ssh",
+            "readOnly": true
+        }
+    ],
+    "environment": [],
+    "volumesFrom": [],
+    "linuxParameters": {
+        "devices": [
+            {
+                "hostPath": "/dev/infiniband",
+                "containerPath": "/dev/infiniband",
+                "permissions": [
+                    "read",
+                    "write"
+                ]
+            }
+        ],
+        "sharedMemorySize": 1024
+    },
+    "ulimits": [
+        {
+            "name": "memlock",
+            "softLimit": -1,
+            "hardLimit": -1
+        }
+    ],
+    "systemControls": [],
+    "essential": true,
+    "privileged": true,
+    "cpu": 0
+}
