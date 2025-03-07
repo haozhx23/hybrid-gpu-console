@@ -37,15 +37,51 @@ class HealthManager:
             f.write('\n'.join(hostname_list))
 
 
-    def submit_health_check(self, hostname_list):
-        savepath, timestampstr = self.generate_healthcheck_savepath()
+    def generate_healthcheck_container_def(self, node_index, dependent=True):
+        health_container_def = self.task_manager.get_healthcheck_container_def()
 
+        if node_index == 0:
+            health_container_def['command'] = ['/healthcheck/healthCheckMain.sh']
+        else:
+            health_container_def['command'] = ['/healthcheck/healthCheckWorker.sh']
+        
+        if dependent:
+            health_container_def.pop('essential')
+
+        return health_container_def
+
+
+
+    def submit_health_check(self, hostname_list):
+        save_path, timestampstr = self.generate_healthcheck_savepath()
         self.setup_connectivity_host_file(hostname_list)
 
-        ecs_task_def = self.task_manager.get_ecs_task_def()
-        ecs_task_def['family'] = "NodeHealthAndConnectivityCheck"
-
         healthcheck_tasks = []
+
+        for _, node_name in enumerate(reversed(hostname_list)):
+            ecs_task_def = self.task_manager.get_ecs_task_def()
+            node_index = hostname_list.index(node_name)
+
+            health_container_def = self.generate_healthcheck_container_def(node_index)
+            ecs_task_def['containerDefinitions'] = [health_container_def]
+
+            node_task_def_path = os.path.join(save_path, f"task_def_{node_name}.json")
+            FileManager.save_json(node_task_def_path, ecs_task_def)
+
+            healthcheck_task_id, *_ = TaskManager.task_register_and_exec(node_task_def_path)
+            healthcheck_tasks.append(healthcheck_slv_task_id)
+
+        return healthcheck_tasks
+
+
+
+
+
+
+
+
+    '''
+
 
         for slvnode in hostname_list[1:]:
             health_container_def = self.task_manager.get_healthcheck_container_def()
@@ -59,7 +95,7 @@ class HealthManager:
 
         health_container_def = self.task_manager.get_healthcheck_container_def()
         health_container_def['logConfiguration']['options']['awslogs-group'] = ecs_task_def['family']
-        health_container_def['command'] = ['/healthcheck/healthCheckMaster.sh']
+        health_container_def['command'] = ['/healthcheck/healthCheckMain.sh']
 
         master_task_def_path = savepath + f'/Master-{slvnode}-healthcheck-def.json'
         FileManager.save_json(master_task_def_path, health_container_def)
@@ -68,9 +104,7 @@ class HealthManager:
 
         return healthcheck_tasks
 
-
-
-    '''
+    
         ecs_task_def['placementConstraints'][0]['expression'] = f"attribute:node=={node_name}"
         
 

@@ -22,23 +22,6 @@ import json
 import boto3
 
 
-# def _run_aws_cli(cmd):
-#     result = subprocess.run(
-#         cmd,
-#         capture_output=True,
-#         text=True,
-#         check=True  # This will raise CalledProcessError if the command fails
-#     )
-    
-#     # Parse the JSON output
-#     response = json.loads(result.stdout)
-#     return response
-
-
-# def _get_arn_id(arn):
-#     return arn.split('/')[-1]
-
-
 def _convert_floats_to_decimal(obj):
     if isinstance(obj, float):
         return Decimal(str(obj))  # Convert float to string first for precision
@@ -64,14 +47,6 @@ class TrainingManager:
         self.job_manager = JobManager()
 
 
-    # def validate_inputs(self, num_nodes: int, entry_script_path: str, task_def_path: str) -> Optional[str]:
-    #     return InputValidator.validate_inputs(
-    #         num_nodes, 
-    #         entry_script_path, 
-    #         task_def_path,
-    #         len(self.nodes)
-    #     )
-
     def generate_job_id(self, base_job_name):
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         # output_dir = f"training_output_{timestamp}"
@@ -82,7 +57,6 @@ class TrainingManager:
 
     def assign_job_nodes(self, num_nodes):
         master_node_name = self.node_manager.assign_a_node_name()
-        # master_node_addr = self.node_manager.get_node_address(master_node_name)
 
         all_node_names = [master_node_name]
 
@@ -118,7 +92,6 @@ class TrainingManager:
             # node_task_def_path = self.generate_node_task_def(
             #     task_def_template_path, node_name, node_wrap_script_path, ui_task_config, exec_history_save_dir
             # )
-            
             
             node_task_def_path = self.construct_node_task_def(node_name, i, master_port, node_wrap_script_path, ui_task_config, exec_history_save_dir)
 
@@ -205,7 +178,6 @@ class TrainingManager:
 
         resp = DynamoDBHandler.write_item(table_name = self.task_ddb_table_name,
                                     item = {
-                                    # 'job_id_node': f'{job_id}-{nodei}',
                                     'ecs_task_id': task_id,
                                     'node_name': node_name,
                                     'node_index_in_job': nodei, #Decimal(rank),
@@ -217,8 +189,8 @@ class TrainingManager:
                                     'task_def_revision': task_def_arn.split(':')[-1],
                                     'cluster_name': cluster_name,
                                     'container_inst_id': container_inst_id,
-                                    'retry': 0,
-                                    'task_status': 'IN_PROGRESS',
+                                    # 'retry': 0,
+                                    # 'task_status': 'IN_PROGRESS',
                                     'updated_at': datetime.now().isoformat(),
                                     'created_at': datetime.now().isoformat(),
                                     # 'metadata': _convert_floats_to_decimal({
@@ -269,20 +241,12 @@ class TrainingManager:
 
 
         if task_config['traininghealth_check']:
-            health_container_def = self.task_manager.get_healthcheck_container_def()
-            # health_container_def['logConfiguration']['options']['awslogs-group'] = task_config['logGroup']
-            if node_index == 0:
-                health_container_def['command'] = ['/healthcheck/healthCheckMasterTest.sh']
-            else:
-                health_container_def['command'] = ['/healthcheck/healthCheckWorkerTest.sh']
-
-            health_container_def.pop('essential')
-
+            health_container_def = self.health_manager.generate_healthcheck_container_def(node_index, dependent=True)
             training_container_def['dependsOn'] = [{"containerName": health_container_def['name'], "condition": "COMPLETE"}]
             ecs_task_def['containerDefinitions'] = [health_container_def, training_container_def]
-
         else:
             ecs_task_def['containerDefinitions'] = [training_container_def]
+
         
         node_task_def_path = os.path.join(output_dir, f"task_def_{node_name}.json")
         FileManager.save_json(node_task_def_path, ecs_task_def)

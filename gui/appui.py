@@ -132,23 +132,24 @@ class EnhancedTrainingGUI:
                 results.append(f"\n  └─ Task IDs: {', '.join(training_task_ids)}")
 
 
-            # Generate summary and node status
-            summary = self.training_manager.get_summary(
-                job_id, num_nodes, master_port, exec_history_save_dir, user_script_path
-            )
+            # # Generate summary and node status
+            # summary = self.training_manager.get_summary(
+            #     job_id, num_nodes, master_port, exec_history_save_dir, user_script_path
+            # )
+
             node_data = self.node_manager.get_node_status_display()
             
             progress(1.0, desc="Complete!")
             return (
                 gr.Markdown("\n".join(results)),
-                summary,
+                # summary,
                 node_data
             )
                 
         except Exception as e:
             return (
                 gr.Markdown(f"⚠️ Error: {str(e)}"),
-                None,
+                # None,
                 None
             )
         finally:
@@ -206,8 +207,6 @@ class EnhancedTrainingGUI:
 
 def create_interface() -> gr.Blocks:
     gui = EnhancedTrainingGUI()
-
-    # gui.refresh_node_status()
     
     with gr.Blocks(
         title="Hybrid-GPU Training Console",

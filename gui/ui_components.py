@@ -29,8 +29,8 @@ def create_training_tab(launch_callback: Callable, release_all_callback: Callabl
                         gr.Markdown("### 📊 Training Configs")
                         base_job_name = gr.Textbox(
                             label="Base Job Name",
-                            placeholder=f"job1",
-                            value=f"job1",
+                            placeholder=f"torch-job",
+                            value=f"torch-job",
                             info="This will be used as prefix for the job ID",
                             container=False
                         )
@@ -77,12 +77,6 @@ def create_training_tab(launch_callback: Callable, release_all_callback: Callabl
                 with gr.Column(scale=1):
                     with gr.Group():
                         gr.Markdown("### 📋 ECS Task Definition Configs")
-                        # node_mapping_path = gr.Text(
-                        #     value=f"{os.environ['ECS_CLUSTER_CONF_PATH']}", 
-                        #     info="ECS Config file incl. task def. container def. and node info.",
-                        #     label="ECS Config Files", 
-                        #     interactive=False
-                        # )
                         ecsClusterName = gr.Text(
                             value=os.environ['CLUSTER_NAME'],
                             info="Name of ECS Cluster Control Plane",
@@ -134,12 +128,7 @@ def create_training_tab(launch_callback: Callable, release_all_callback: Callabl
             with gr.Row():
                 with gr.Column(scale=5):
                     pass  # 空列用于占位
-                # with gr.Column(scale=2):
-                #     health_check_checkbox = gr.Checkbox(
-                #         label="Health check before training job",
-                #         value=False,
-                #         info="Health check before training job"
-                    # )
+
                 with gr.Column(scale=1):
                     launch_btn = gr.Button("🚀 Launch Training", variant="primary", min_width=200)
 
@@ -151,8 +140,8 @@ def create_training_tab(launch_callback: Callable, release_all_callback: Callabl
                     with gr.TabItem("📝 Execution Trace"):
                         output_log = gr.Markdown("Click 'Launch Training' to begin.")
                     
-                    with gr.TabItem("📊 Summary"):
-                        summary = gr.JSON(label="Training Configuration Summary")
+                    # with gr.TabItem("📊 Summary"):
+                    #     summary = gr.JSON(label="Training Configuration Summary")
                     
                     with gr.TabItem("📡 Node Name Assigned") as node_assignment_tab:
                         with gr.Column():
@@ -161,8 +150,14 @@ def create_training_tab(launch_callback: Callable, release_all_callback: Callabl
                                 # release_all_btn = gr.Button("🔄 Release All Node Names", variant="secondary")
                             node_status = gr.HTML(
                                 label="Node Status Overview",
+                                every=30,
                                 value=lambda: create_node_table(refresh_node_callback())
                             )
+    
+    
+    def refresh_and_format_nodes():
+        data = refresh_node_callback()
+        return create_node_table(data)
 
 
     # Launch button click handler
@@ -184,21 +179,21 @@ def create_training_tab(launch_callback: Callable, release_all_callback: Callabl
         ],
         outputs=[
             output_log,
-            summary,
+            # summary,
             node_status
         ]
+    ).then(
+        fn=refresh_and_format_nodes,
+        outputs=[node_status]
     )
 
-    # Wrap callbacks to return HTML
-    def release_and_format():
-        data = release_all_callback()
-        return create_node_table(data)
+    # # Wrap callbacks to return HTML
+    # def release_and_format():
+    #     data = release_all_callback()
+    #     return create_node_table(data)
 
-    def refresh_and_format_nodes():
-        data = refresh_node_callback()
-        return create_node_table(data)
 
-    # Release all nodes button click handler
+    # # Release all nodes button click handler
     # release_all_btn.click(
     #     fn=release_and_format,
     #     outputs=[node_status]
@@ -218,20 +213,12 @@ def create_training_tab(launch_callback: Callable, release_all_callback: Callabl
 
     return {
         "output_log": output_log,
-        "summary": summary,
+        # "summary": summary,
         "node_status": node_status
     }
 
 
 def create_health_check_tab(health_check_callback: Callable) -> Dict[str, Any]:
-    # node_manager = NodeManager()
-    # node_list = [
-    #     {"name": "node1", "status": "available"},
-    #     {"name": "node2", "status": "busy"},
-    #     {"name": "node3", "status": "available"},
-    # ]
-
-    # node_manager.get_node_names()
 
     with gr.Row():
         gr.Markdown("Input Master Node Name")
@@ -290,6 +277,8 @@ def create_job_status_tab(refresh_callback: Callable, log_callback: Callable) ->
                     with gr.Row():
                         gr.Markdown("## 📋 作业状态", elem_classes="card-title")
                         
+                    with gr.Row():
+                        refresh_btn = gr.Button("🔄 Refresh", variant="secondary", elem_classes="action-button")
                     
                     # 作业状态表格
                     job_status = gr.HTML(
@@ -298,21 +287,23 @@ def create_job_status_tab(refresh_callback: Callable, log_callback: Callable) ->
                         elem_classes="status-table"
                     )
 
-                    with gr.Row():
-                        with gr.Column(scale=6):
-                            pass
-                        with gr.Column(scale=1):
-                            refresh_btn = gr.Button("🔄 刷新", variant="primary", elem_classes="action-button")
+                    # with gr.Row():
+                    #     with gr.Column(scale=6):
+                    #         pass
+                    #     with gr.Column(scale=1):
+                    #         refresh_btn = gr.Button("🔄 刷新", variant="primary", elem_classes="action-button")
                     
                     # 停止作业区域
-                    with gr.Row():
-                        with gr.Column(scale=4):
+                    with gr.Row(equal_height=True):
+                        with gr.Column(scale=2):
                             job_id_input = gr.Textbox(
                                 label="作业 ID",
                                 placeholder="输入要停止的作业 ID",
                                 interactive=True,
                                 type="text"
                             )
+                        with gr.Column(scale=2):
+                            pass
                         with gr.Column(scale=2):
                             pass
                         with gr.Column(scale=1):
@@ -353,60 +344,6 @@ def create_job_status_tab(refresh_callback: Callable, log_callback: Callable) ->
                     
                     with gr.Row():
                         log_output = gr.Markdown(elem_classes="log-viewer")
-
-# def create_job_status_tab(refresh_callback: Callable, log_callback: Callable) -> Dict[str, Any]:
-#     with gr.Group():
-#         gr.Markdown("## 📋 Job Status")
-#         with gr.Row():
-#             refresh_btn = gr.Button("🔄 Refresh", variant="secondary", scale=0)
-        
-#         # Initialize with empty list and get initial data
-#         job_status = gr.HTML(
-#             label="Job Status Overview",
-#             value=lambda: create_job_table(refresh_callback()),
-#             every=30  # Auto-refresh every 30 seconds
-#         )
-
-#         # Add stop job section
-#         with gr.Row():
-#             job_id_input = gr.Textbox(
-#                 label="Job ID",
-#                 placeholder="Enter job ID to stop",
-#                 interactive=True,
-#                 type="text",
-#                 container=True
-#             )
-#             stop_job_btn = gr.Button("🛑 Stop Job", variant="secondary")
-
-#         # Add log viewer section
-#         gr.Markdown("## 📜 Task Logs")
-#         with gr.Row():
-            
-#             log_group_input = gr.Textbox(
-#                 label="Log Group",
-#                 placeholder=task_manager.training_container_def['logConfiguration']['options']['awslogs-group'],
-#                 value=task_manager.training_container_def['logConfiguration']['options']['awslogs-group'],
-#                 interactive=False,
-#                 type="text",
-#                 container=True
-#             )
-#             container_name_input = gr.Textbox(
-#                 label="Container Name",
-#                 placeholder=task_manager.training_container_def['name'],
-#                 value=task_manager.training_container_def['name'],
-#                 interactive=False,
-#                 type="text",
-#                 container=True
-#             )
-#             task_id_input = gr.Textbox(
-#                 label="Task ID",
-#                 placeholder="Task ID in above table",
-#                 interactive=True,
-#                 type="text",
-#                 container=True
-#             )
-#             log_refresh_btn = gr.Button("🔄 Fetch Logs", variant="secondary")
-#         log_output = gr.Markdown(label="Log Output")
 
 
     # Handle manual refresh
