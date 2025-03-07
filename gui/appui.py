@@ -68,16 +68,8 @@ class EnhancedTrainingGUI:
 
             # Collect task configuration from input parameters
             ui_task_config = {
-                # 'cluster_name': ecsClusterName,
                 'family': f'{family}',
-                # 'family': family,
-                # 'taskRoleArn': taskRoleArn,
-                # 'executionRoleArn': executionRoleArn,
-                # 'containerName': containerName,
                 'image': image,
-                # 'logGroup': f'ecs/{family}',
-                # 'containerWorkdir': containerWorkdir,
-                # 'hostWorkdir': hostWorkdir
                 'traininghealth_check': health_check_checkbox
             }
 
@@ -88,76 +80,6 @@ class EnhancedTrainingGUI:
             # Assign nodes for the job
             all_node_names = self.training_manager.assign_job_nodes(num_nodes)
             print('### all_node_names ### ', all_node_names)
-            
-            # Update node status in DynamoDB for assigned nodes
-            # for node_name in all_node_names:
-            #     self.node_manager.update_node_status(node_name, UserNodeStatus.ASSIGNED.value)
-
-            '''
-            if health_check_checkbox:
-                
-                # "dependsOn": [
-                #         {
-                #         "containerName": "health-check-container",
-                #         "condition": "HEALTHY"
-                #         }
-                #     ],
-
-                progress(0.2, desc="Launching health check for assigned nodes...")
-                healthcheck_task_ids = self.health_manager.submit_health_check(all_node_names)
-                print(healthcheck_task_ids)
-
-                self.job_manager.add_job_for_display(Job(
-                    id='PreHealthCheck-'+job_id,
-                    timestamp=job_timestamp,
-                    status="Submitted",
-                    num_nodes=num_nodes,
-                    task_ids=healthcheck_task_ids
-                ))
-
-                ## Polling healthcheck all tasks status
-                retry_interval=5
-                retry_times=60
-                timeout = retry_interval*retry_times
-
-                succeed_healthcheck_tasks = []
-                for i in range(retry_times):
-                    progress(0.2+(i+1)/retry_times, desc=f"Health checking for assigned nodes... ({i+1}/{retry_times}) \n {len(succeed_healthcheck_tasks)} succeeded.")
-
-                    for taskid in healthcheck_task_ids:
-
-                        if taskid in succeed_healthcheck_tasks:
-                            continue
-
-                        taskstatus = TaskManager.check_task_status(taskid)
-                        if taskstatus == 'FAIL':
-                            # return None
-                            self.job_manager.add_job_for_display(Job(
-                                id='PreHealthCheck-'+job_id,
-                                timestamp=job_timestamp,
-                                status="TaskFailed",
-                                num_nodes=num_nodes,
-                                task_ids=taskid
-                            ))
-                            return (
-                                gr.Markdown(f"Health check for task {taskid} failed. Please check the CloudWatch logs."),
-                                '',
-                                ''
-                            )
-                        elif taskstatus == 'RUNNING':
-                            continue
-                        elif taskstatus == 'SUCCESS':
-                            succeed_healthcheck_tasks.append(taskid)
-
-                    if len(set(succeed_healthcheck_tasks)) == len(healthcheck_task_ids):
-                        progress(0.3, desc="Health checking for all nodes succeeded...")
-                        break
-
-                    time.sleep(retry_interval)
-
-                ## launch another thread to polling all healthcheck_task_ids
-                ## if status ready of all healthcheck_task_ids
-            '''
 
             print(health_check_checkbox)
 
@@ -203,41 +125,13 @@ class EnhancedTrainingGUI:
                 results.append(f"\n🔷 Node: {all_node_names[i]}")
                 results.append(f"\n  └─ Register & Execute: `{node_task_def_path}`")
 
-            # Make script executable
-            # try:
-            #     current_dir = os.getcwd()
-            #     parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            #     os.chdir(parent_dir)
-            #     os.chmod(ecs_cli_path, 0o755)
-            # finally:
-            #     os.chdir(current_dir)
-
-            # Collect all commands
-            # commands = [f"{ecs_cli_path} {path}" for path in all_task_def_paths]
-
-            # Create execution history and execute commands
-
-
-            # progress(0.9, desc="Launching tasks and saving execution history...")
-
-            # history_path, task_ids = self.training_manager.execute_and_save_history(
-            #     output_dir, commands, ecs_cli_path
-            # )
 
             results.append(f"\n📝 Execution history saved to: `{history_file_path}`")
             results.append(f"\n🔍 Job ID: {job_id}")
             if training_task_ids:
                 results.append(f"\n  └─ Task IDs: {', '.join(training_task_ids)}")
 
-            # Add to job manager with task IDs
-            # self.job_manager.add_job_for_display(Job(
-            #     id=job_id,
-            #     timestamp=job_timestamp,
-            #     status="Submitted",
-            #     num_nodes=num_nodes,
-            #     task_ids=training_task_ids
-            # ))
-            
+
             # Generate summary and node status
             summary = self.training_manager.get_summary(
                 job_id, num_nodes, master_port, exec_history_save_dir, user_script_path
@@ -275,44 +169,8 @@ class EnhancedTrainingGUI:
 
         healthcheck_task_ids = self.health_manager.submit_health_check(all_node_names)
         print(healthcheck_task_ids)
-
-        # # 验证master node ID是否已输入
-        # if not master_node_name:
-        #     return "Please enter Master Node Name", None
-        
-        # # 生成hostfile内容
-        # hostfile_list = [master_node_name.strip()]  # 第一行是master node
-        # print("------other_nodes_values: ", other_nodes_values)
-        # other_nodes_list = other_nodes_values.split(',')
-
-        # other_nodes_list = [ndname.strip() for ndname in other_nodes_list]
-        # for ndname in other_nodes_list:
-        #     ndname = ndname.strip()
-        #     if ndname not in hostfile_list:
-        #         hostfile_list.append(ndname)
-
-        # # 先去重后取交集
-        # A = list(dict.fromkeys(hostfile_list))  # 去重
-        # hostfile_content = [x for x in A if x in self.node_manager.get_node_names()]
-        
-        # # 如果没有选择任何worker节点
-        # if len(hostfile_content) < 1:
-        #     return "Please select at least one node", None
-
-        # self.health_manager.submit_health_check(hostfile_content)
-        
         return None
 
-
-
-    # def kill_job(self, evt: gr.SelectData) -> List[List[str]]:
-    #     try:
-    #         if not evt.value or len(evt.value) == 0:
-    #             return self.job_manager.get_jobs_data()
-    #         self.job_manager.kill_job(evt.value[0])  # Pass the job ID (first column)
-    #         return self.job_manager.get_jobs_data()
-    #     except (IndexError, AttributeError):
-    #         return self.job_manager.get_jobs_data()
 
     def refresh_job_status(self) -> List[List[str]]:
         """Callback for refreshing job status table."""
@@ -390,7 +248,6 @@ if __name__ == "__main__":
     ## Move to CDK
     ##############################
     # from ddb_handler import DynamoDBHandler
-    # DynamoDBHandler.create_table_if_not_exists(os.environ['NODE_MANAGE_TABLE'], 'node_name')
     # DynamoDBHandler.create_table_if_not_exists(os.environ['JOB_MANAGE_TABLE'], 'job_id')
     # DynamoDBHandler.create_table_if_not_exists(os.environ['TASK_MANAGE_TABLE'], 'ecs_task_id')
     # time.sleep(10)

@@ -8,9 +8,7 @@ import boto3
 from datetime import datetime
 
 from file_manager import FileManager
-# from dist_command_generator import DistCommandGenerator
-# from node_manager import NodeManager
-# from validator import InputValidator
+
 from task_manager import TaskManager
 
 
@@ -34,7 +32,7 @@ class HealthManager:
 
     def setup_connectivity_host_file(self, hostname_list):
         os.system('mkdir -p /fsx/healthcheck/')
-        hostfile_local_path = "/fsx/healthcheck/_myhost"
+        hostfile_local_path = "/fsx/healthcheck/my_hosts"
         with open(hostfile_local_path, 'w') as f:
             f.write('\n'.join(hostname_list))
 

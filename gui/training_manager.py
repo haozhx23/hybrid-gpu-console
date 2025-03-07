@@ -157,9 +157,9 @@ class TrainingManager:
             container_inst_ids.append(container_inst_id)
             ecs_task_ids.append(ecs_task_id)
 
-        print('ccccccc', all_commands)
+        print('all_commands', all_commands)
         history_file = FileManager.create_execution_history(exec_history_save_dir, all_commands)
-        print('dddddd')
+        print('history_file', history_file)
 
 
         ## if Each node is assigned a task, write to job
