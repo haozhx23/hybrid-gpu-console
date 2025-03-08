@@ -413,7 +413,7 @@ def create_job_table(data: List[List[str]]) -> str:
                     <th>Timestamp</th>
                     <th>Status</th>
                     <th>Nodes</th>
-                    <th>Container Instance ID</th>
+                    <th>ECS Task ID</th>
                 </tr>
             </thead>
             <tbody>
