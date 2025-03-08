@@ -243,6 +243,7 @@ class TrainingManager:
         if task_config['traininghealth_check']:
             health_container_def = self.health_manager.generate_healthcheck_container_def(node_index, dependent=True)
             training_container_def['dependsOn'] = [{"containerName": health_container_def['name'], "condition": "COMPLETE"}]
+            training_container_def['essential'] = False
             ecs_task_def['containerDefinitions'] = [health_container_def, training_container_def]
         else:
             ecs_task_def['containerDefinitions'] = [training_container_def]

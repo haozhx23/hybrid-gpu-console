@@ -46,7 +46,8 @@ class HealthManager:
             health_container_def['command'] = ['/healthcheck/healthCheckWorker.sh']
         
         if dependent:
-            health_container_def.pop('essential')
+            # health_container_def.pop('essential')
+            health_container_def['essential'] = False
 
         return health_container_def
 
@@ -69,7 +70,7 @@ class HealthManager:
             FileManager.save_json(node_task_def_path, ecs_task_def)
 
             healthcheck_task_id, *_ = TaskManager.task_register_and_exec(node_task_def_path)
-            healthcheck_tasks.append(healthcheck_slv_task_id)
+            healthcheck_tasks.append(healthcheck_task_id)
 
         return healthcheck_tasks
 
