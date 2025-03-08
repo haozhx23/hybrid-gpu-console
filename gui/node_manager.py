@@ -73,6 +73,9 @@ class NodeManager:
     def refresh_all_node_status(self):
         # self.cluster_name
         # self.ecs_client
+
+        self.release_all_node_names()
+
         container_instance_arns = []
         paginator = self.ecs_client.get_paginator('list_container_instances')
 
@@ -115,11 +118,12 @@ class NodeManager:
                     self.nodes[node_name].status = True
                 else:
                     self.nodes[node_name].status = False
+                    self.spare_nodes.remove(node_name)
 
                 print(container_instance_id, node_name, node_physical_status, registered_gpu, remain_gpu, node_usable)
         
 
-        self.release_all_node_names()
+        
 
         return
 
