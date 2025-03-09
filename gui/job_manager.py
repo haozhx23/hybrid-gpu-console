@@ -41,7 +41,7 @@ class JobManager:
         """Update node status in DynamoDB"""
         try:
             success = DynamoDBHandler.update_item(
-                table_name=os.environ['JOB_MANAGE_TABLE'], 
+                table_name=os.environ['JOB_MANAGE_TABLE'],
                 key={'job_id': job_id},
                 update_expression="SET job_status = :s, updated_at = :t",
                 expression_values={
