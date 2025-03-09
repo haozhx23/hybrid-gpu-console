@@ -86,3 +86,41 @@ class TaskManager:
 
         return exec_result
 
+
+    @staticmethod
+    def is_task_running(task_id):
+        """
+        Check if an ECS task is currently running.
+        
+        Args:
+            task_id (str): The ID of the task to check
+            
+        Returns:
+            bool: True if the task is running, False otherwise (stopped, crashed, etc.)
+        """
+        describe_task_cmd = [
+            'aws', 'ecs', 'describe-tasks',
+            '--cluster', f"{os.environ['CLUSTER_NAME']}",
+            '--tasks', task_id,
+            '--output', 'json'
+        ]
+        
+        try:
+            result = _run_aws_cli(describe_task_cmd)
+            
+            # Check if we got task information back
+            if not result.get('tasks'):
+                return False
+                
+            task = result['tasks'][0]
+            last_status = task.get('lastStatus')
+            desired_status = task.get('desiredStatus')
+            
+            # Task is running if both lastStatus and desiredStatus are "RUNNING"
+            return last_status == 'RUNNING' and desired_status == 'RUNNING'
+            
+        except Exception as e:
+            print(f"Error checking task status: {e}")
+            return False
+
+

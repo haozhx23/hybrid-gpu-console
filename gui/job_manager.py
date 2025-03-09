@@ -72,19 +72,26 @@ class JobManager:
         
         for taskid in job_tasks.keys():
             try:
-                resp = TaskManager.stop_ecs_task(taskid)
+                if TaskManager.is_task_running(taskid):
+                    resp = TaskManager.stop_ecs_task(taskid)
 
-                # if resp['task']['stopCode'] == "EssentialContainerExited":
-                #     NodeManager().update_node_status(job_tasks[taskid], UserNodeStatus.AVAILABLE.value)
-                # else:
-                #     NodeManager().update_node_status(job_tasks[taskid], UserNodeStatus.UNKNOWN.value)
+                    # if resp['task']['stopCode'] == "EssentialContainerExited":
+                    #     NodeManager().update_node_status(job_tasks[taskid], UserNodeStatus.AVAILABLE.value)
+                    # else:
+                    #     NodeManager().update_node_status(job_tasks[taskid], UserNodeStatus.UNKNOWN.value)
+
+                    # print('STOP RESP: ', resp)
+
+                    JobManager.update_job_status(job_id, 'USER_STOPPED')
+                else:
+                    print(f"Task {taskid} is not running")
 
             except Exception as e:
                 # Keep stop other tasks
                 print(f"Error stopping tasks {taskid}: {str(e)}")
                 # NodeManager().update_node_status(job_tasks[taskid], UserNodeStatus.UNKNOWN.value)
             
-        JobManager.update_job_status(job_id, 'USER_STOPPED')
+        
 
         return True
 

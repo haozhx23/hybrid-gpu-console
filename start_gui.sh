@@ -37,4 +37,6 @@ echo "Access the interface at: http://localhost:$PORT"
 
 # Choose interface version
 echo "Using classic UI (appUI.py) with prefill: $UI_PREFILL"
-python gui/appui.py
+# python gui/appui.py
+python gui/appuiv3.py
+# python gui/appui-stl.py

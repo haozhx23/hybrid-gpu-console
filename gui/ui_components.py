@@ -291,7 +291,7 @@ class UIComponents:
         Returns:
             Dictionary of UI components for reference
         """
-        with gr.Blocks(css=UIComponents._get_jobtab_css()) as demo:
+        with gr.Blocks(css=UIComponents._get_jobtab_css()):
             with gr.Column():
                 # Job status section
                 with gr.Blocks(elem_classes="dashboard-card"):
@@ -300,7 +300,7 @@ class UIComponents:
                             gr.Markdown("## 📋 作业状态", elem_classes="card-title")
                             
                         with gr.Row():
-                            refresh_btn = gr.Button("🔄 Refresh", variant="secondary", elem_classes="action-button")
+                            job_refresh_btn = gr.Button("🔄 Refresh", variant="secondary", elem_classes="action-button")
                         
                         # Job status table
                         job_status = gr.HTML(
@@ -362,13 +362,18 @@ class UIComponents:
                             log_output = gr.Markdown(elem_classes="log-viewer")
 
         # Handle manual refresh
-        def refresh_and_format():
+        def refresh_and_format_jobs():
             return UIComponents._create_job_table(refresh_callback())
 
-        refresh_btn.click(
-            fn=refresh_and_format,
+        job_refresh_btn.click(
+            fn=refresh_and_format_jobs,
             outputs=[job_status]
         )
+
+        # job_status_tab.click(
+        #     fn=refresh_and_format_jobs,
+        #     outputs=[job_status]
+        # )
 
         # # Handle stop job button click
         # def stop_job_and_refresh(job_id: str):
@@ -381,6 +386,7 @@ class UIComponents:
         #         return "", UIComponents._create_job_table(refresh_callback())
         #     except Exception as e:
         #         return f"Error stopping job: {str(e)}", UIComponents._create_job_table(refresh_callback())
+
 
         def stop_job_and_refresh(job_id: str):
             if not job_id or not job_id.strip():
@@ -424,7 +430,7 @@ class UIComponents:
 
         return {
             "job_status": job_status,
-            "refresh_btn": refresh_btn,
+            "refresh_btn": job_refresh_btn,
             "task_id_input": task_id_input,
             "log_output": log_output,
             "log_refresh_btn": log_refresh_btn,
