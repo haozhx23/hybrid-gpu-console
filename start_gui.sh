@@ -1,5 +1,8 @@
 #!/bin/bash
 
+export USER_NAME='cluster-user1'
+export USER_PASSWORD='abc123'
+
 # Default prefill file
 export CLUSTER_NAME="nwcd-g5-v1"
 export JOB_MANAGE_TABLE="$CLUSTER_NAME-jobs"
@@ -23,20 +26,23 @@ MINUTE=$(date +%M | sed 's/^0*//')  # Remove leading zeros
 BASE_PORT=6000  # Base port to ensure we're above privileged ports
 
 # Combine hour and minute, then add base port
-TIME_NUM="${HOUR}${MINUTE}"
+
+## Dynamic port number based on timestamp
+# TIME_NUM="${HOUR}${MINUTE}"
 # PORT=$((BASE_PORT + TIME_NUM))
+
+## static port number
 PORT=7789
 
 # Export port for Gradio
 export GRADIO_SERVER_PORT=$PORT
 
 echo "Current time: $(date +%H:%M)"
-echo "Time number: $TIME_NUM"
 echo "Starting Gradio interface on port: $PORT"
-echo "Access the interface at: http://localhost:$PORT"
+# echo "Access the interface at: http://localhost:$PORT"
 
 # Choose interface version
-echo "Using classic UI (appUI.py) with prefill: $UI_PREFILL"
+echo "Using UI appUI.py"
 # python gui/appui.py
 python gui/appuiv3.py
 # python gui/appui-stl.py

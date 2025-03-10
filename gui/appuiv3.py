@@ -24,11 +24,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+def get_login_user(request: gr.Request):
+    return f"{request.username}"
+
+
 # Constants
 APP_TITLE = "Hybrid-GPU Training Console"
 DEFAULT_PORT = 7860
 
-task_manager = TaskManager()
+# task_manager = TaskManager()
 
 class EnhancedTrainingGUI:
     def __init__(self):
@@ -486,10 +491,16 @@ class EnhancedTrainingGUI:
         }
         """
 
+
+
+
+
+
 # UI Building functions - Refactored to separate UI creation from logic
 class UIBuilder:
     def __init__(self, gui):
         self.gui = gui
+        self.task_manager = TaskManager()
 
     def build_training_tab(self):
         with gr.Column():
@@ -833,7 +844,7 @@ class UIBuilder:
                     with gr.Column(scale=2):
                         log_group_input = gr.Textbox(
                             label="日志组",
-                            value=task_manager.training_container_def['logConfiguration']['options']['awslogs-group'],
+                            value=self.task_manager.training_container_def['logConfiguration']['options']['awslogs-group'],
                             interactive=False,
                             type="text"
                         )
@@ -841,7 +852,7 @@ class UIBuilder:
                     with gr.Column(scale=2):
                         container_name_input = gr.Textbox(
                             label="容器名称",
-                            value=task_manager.training_container_def['name'],
+                            value=self.task_manager.training_container_def['name'],
                             interactive=False,
                             type="text"
                         )
@@ -925,6 +936,14 @@ class UIBuilder:
 def create_interface():
     gui = EnhancedTrainingGUI()
     ui_builder = UIBuilder(gui)
+
+    def update_welcome_message(request: gr.Request):
+        return f"""
+            # 🚀 {APP_TITLE}
+            ### Distributed Training Management Interface
+            Welcome, {request.username}!
+            """
+
     
     with gr.Blocks(
         title=APP_TITLE,
@@ -934,13 +953,24 @@ def create_interface():
             secondary_hue="indigo",
         )
     ) as interface:
-        gr.Markdown(
-            f"""
-            # 🚀 {APP_TITLE}
-            ### Distributed Training Management Interface
-            """,
+
+        # titlemd = gr.Markdown(
+        #     f"""
+        #     # 🚀 {APP_TITLE}
+        #     ### Distributed Training Management Interface
+        #     Wellcome, {the user name here}
+        #     """,
+        #     elem_classes=["title"]
+        # )
+
+        titlemd = gr.Markdown(
             elem_classes=["title"]
         )
+
+        interface.load(update_welcome_message, None, titlemd)
+
+
+        # interface.load(get_login_user, None, titlemd)
         
         with gr.Tabs() as tabs:
             # Launch Training Tab
@@ -968,11 +998,16 @@ if __name__ == "__main__":
     
     # Get port from environment variable or use default
     port = int(os.environ.get('GRADIO_SERVER_PORT', DEFAULT_PORT))
+
+
     
     # Launch the interface
     interface.launch(
         server_name="0.0.0.0",
         server_port=port,
         show_error=True,
-        share=True
+        share=True,
+        auth=[(os.environ.get('USER_NAME'), 
+            os.environ.get('USER_PASSWORD')
+            )]
     )
