@@ -27,6 +27,9 @@ class DistCommandGenerator:
             "echo '### Execution of Portal wrapped entry ###'\n", 
             f"chmod +x /workspace/{entry_script_path}",
             "export NCCL_SOCKET_IFNAME=e",
+            "FI_PROVIDER=efa",
+            "export NCCL_PROTO=simple",
+            "export FI_EFA_USE_DEVICE_RDMA=1",
             # "export NCCL_SOCKET_IFNAME=bond0",
             # "export NCCL_IB_DISABLE=0",
             # "export NCCL_DEBUG=INFO",
@@ -40,6 +43,9 @@ class DistCommandGenerator:
 
         return "\n".join(node_vars)
 
+
+
+    '''
         # ]
         
         # torchrun_args = [
@@ -97,5 +103,7 @@ class DistCommandGenerator:
         
         return " ".join(init_sets + env_vars + torchrun_args + config_args)
 
-    def generate_script_content(self, command: str) -> str:
-        return f"#!/bin/bash\n{command}\n"
+    # def generate_script_content(self, command: str) -> str:
+    #     return f"#!/bin/bash\n{command}\n"
+
+    '''

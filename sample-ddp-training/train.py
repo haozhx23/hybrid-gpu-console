@@ -23,21 +23,22 @@ def demo_basic():
 
     print(f"Start running basic DDP example on rank {rank}.")
 
-    # # create model and move it to GPU with id rank
-    # device_id = rank % torch.cuda.device_count()
-    # model = ToyModel().to(device_id)
-    # ddp_model = DDP(model, device_ids=[device_id])
-    # loss_fn = nn.MSELoss()
-    # optimizer = optim.SGD(ddp_model.parameters(), lr=0.001)
+    # create model and move it to GPU with id rank
+    device_id = rank % torch.cuda.device_count()
+    model = ToyModel().to(device_id)
+    ddp_model = DDP(model, device_ids=[device_id])
+    loss_fn = nn.MSELoss()
+    optimizer = optim.SGD(ddp_model.parameters(), lr=0.001)
 
-    # for i in range(100):
-    #     print(f"step-{i}")
-    #     optimizer.zero_grad()
-    #     outputs = ddp_model(torch.randn(20, 10))
-    #     labels = torch.randn(20, 5).to(device_id)
-    #     loss_fn(outputs, labels).backward()
-    #     optimizer.step()
-    #     dist.destroy_process_group()
+    for i in range(100):
+        print(f"step-{i}")
+        optimizer.zero_grad()
+        outputs = ddp_model(torch.randn(20, 10))
+        labels = torch.randn(20, 5).to(device_id)
+        loss_fn(outputs, labels).backward()
+        optimizer.step()
+    
+    dist.destroy_process_group()
 
     print(f"Finished running basic DDP example on rank {rank}.")
 
