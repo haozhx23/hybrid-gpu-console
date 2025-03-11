@@ -26,6 +26,7 @@ def _get_arn_id(arn):
     return arn.split('/')[-1]
 
 
+# LAUNCH_TYPE = 'EC2' # EC2 EXTERNAL
 LAUNCH_TYPE = 'EXTERNAL' # EC2 EXTERNAL
 
 
@@ -33,7 +34,7 @@ class TaskManager:
     def __init__(self):
         self.ecs_task_def = FileManager.load_json(os.environ['ECS_TASK_DEF'])
         self.training_container_def = FileManager.load_json(os.environ['TRAINING_CONTAINER_DEF'])
-        self.healthcheck_container_def = FileManager.load_json(os.environ['HEALTH_CONTAINER_DEF'])
+        # self.healthcheck_container_def = FileManager.load_json(os.environ['HEALTH_CONTAINER_DEF'])
 
     def get_ecs_task_def(self):
         return self.ecs_task_def.copy()
@@ -41,8 +42,8 @@ class TaskManager:
     def get_training_container_def(self):
         return self.training_container_def.copy()
 
-    def get_healthcheck_container_def(self):
-        return self.healthcheck_container_def.copy()
+    # def get_healthcheck_container_def(self):
+    #     return self.healthcheck_container_def.copy()
 
 
     @staticmethod

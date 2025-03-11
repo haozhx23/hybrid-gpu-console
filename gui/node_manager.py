@@ -22,7 +22,7 @@ class UserNodeStatus(Enum):
 class NodeInfo:
     name: str
     ip: str
-    ibdev: List[str]
+    # ibdev: List[str]
     num_gpus: int = 8
     status: bool = False
     container_inst_id: str = ""
@@ -50,8 +50,8 @@ class NodeManager:
         self.nodes = {
             name: NodeInfo(
                 name=name,
-                ip=info['ip'],
-                ibdev=info['ibdev']
+                ip=info['ip']
+                # ibdev=info['ibdev']
             )
             for name, info in self.node_config.items()
         }
@@ -146,8 +146,8 @@ class NodeManager:
         return node_name
 
 
-    def get_ibdev_list(self, node_name: str) -> List[str]:
-        return self.nodes.get(node_name).ibdev
+    # def get_ibdev_list(self, node_name: str) -> List[str]:
+    #     return self.nodes.get(node_name).ibdev
 
     def get_node_address(self, node_name):
         return self.nodes.get(node_name).ip

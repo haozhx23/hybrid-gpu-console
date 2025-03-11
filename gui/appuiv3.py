@@ -648,7 +648,7 @@ class UIBuilder:
             family = gr.Textbox(
                 label="Task Family",
                 placeholder="training-task-family",
-                value=self.task_manager.get_ecs_task_def['family'],
+                value=self.task_manager.ecs_task_def['family'],
                 info="`family` field in ECS Task Definition",
                 interactive=False,
                 container=False
@@ -657,7 +657,7 @@ class UIBuilder:
             container_name = gr.Textbox(
                 label="Container Name",
                 placeholder="training-container",
-                value=self.task_manager.get_training_container_def['name'],
+                value=self.task_manager.training_container_def['name'],
                 info="`name` field in ECS Container Definition",
                 interactive=False,
                 container=False
@@ -666,7 +666,7 @@ class UIBuilder:
             image = gr.Textbox(
                 label="Container Image",
                 placeholder="training-image:latest",
-                value=self.task_manager.get_training_container_def['image'],
+                value=self.task_manager.training_container_def['image'],
                 info="`image` field in ECS Container Definition",
                 interactive=False,
                 container=False

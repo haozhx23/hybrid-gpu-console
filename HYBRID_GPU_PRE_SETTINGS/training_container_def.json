@@ -24,6 +24,11 @@
             "containerPort": "UI_FILL",
             "hostPort": "UI_FILL",
             "protocol": "tcp"
+        },
+        {
+            "containerPort": 2022,
+            "hostPort": 2022,
+            "protocol": "tcp"
         }
     ],
     "entryPoint": ["/bin/sh"],
@@ -47,6 +52,11 @@
         {
             "sourceVolume": "instancelocalstorage",
             "containerPath": "/local_data",
+            "readOnly": false
+        },
+        {
+            "sourceVolume": "healthcheck",
+            "containerPath": "/healthcheck",
             "readOnly": false
         },
         {
