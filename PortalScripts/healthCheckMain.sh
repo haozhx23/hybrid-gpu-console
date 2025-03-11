@@ -177,7 +177,7 @@ fi
 # 设置 MPI 参数
 
 #mpirun --allow-run-as-root  --hostfile /healthcheck/my_hosts -x NCCL_DEBUG=INFO -x NCCL_IB_DISABLE=0 -x NCCL_IB_HCA=mlx5_10 -x NCCL_ALGO=Ring -x NCCL_IB_QPS_PER_CONNECTION=8 --mca plm_rsh_args "-p 2022" --mca btl openib,sm,self --mca btl_openib_allow_ib 1 --mca btl_openib_if_include mlx5_10 /workspace/nccl-tests/build/all_reduce_perf -b 8M -e 8G -f 2 -g 1
-mpirun --allow-run-as-root  --hostfile /healthcheck/my_hosts -x NCCL_DEBUG=INFO -x NCCL_IB_DISABLE=0 -x NCCL_IB_HCA=mlx5_10 --mca plm_rsh_args "-p 2022"  --bind-to none --mca btl_openib_allow_ib 1 --mca btl_openib_if_include mlx5_10  --mca btl '^tcp' /workspace/nccl-tests/build/all_reduce_perf -b 8M -e 128M -f 2 -g 1
+mpirun --allow-run-as-root  --hostfile /healthcheck/my_hosts -x NCCL_DEBUG=INFO -x NCCL_IB_DISABLE=0 -x NCCL_IB_HCA=$IBDEV_STR --mca plm_rsh_args "-p 2022"  --bind-to none --mca btl_openib_allow_ib 1 --mca btl_openib_if_include mlx5_10  --mca btl '^tcp' /workspace/nccl-tests/build/all_reduce_perf -b 8M -e 128M -f 2 -g 1
 #mpirun --allow-run-as-root --hostfile /healthcheck/my_hosts --mca plm_rsh_args "-p 2022"  --bind-to none --mca btl tcp,self --mca btl_tcp_if_exclude lo,docker0 /workspace/nccl-tests/build/all_reduce_perf -b 8 -e 8G -f 2 -g 1
 #mpirun --allow-run-as-root -np 2 -H node001:8,node002:8  --mca plm_rsh_args "-p 2022"  --bind-to none --mca btl tcp,self --mca btl_tcp_if_exclude lo,docker0 /workspace/nccl-tests/build/all_reduce_perf -b 8 -e 8G -f 2 -g 1
 
