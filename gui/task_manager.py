@@ -26,6 +26,9 @@ def _get_arn_id(arn):
     return arn.split('/')[-1]
 
 
+LAUNCH_TYPE = 'EXTERNAL' # EC2 EXTERNAL
+
+
 class TaskManager:
     def __init__(self):
         self.ecs_task_def = FileManager.load_json(os.environ['ECS_TASK_DEF'])
@@ -64,7 +67,7 @@ class TaskManager:
             '--cluster', f'{os.environ['CLUSTER_NAME']}',
             '--task-definition', task_def_arn,
             '--count', '1',
-            '--launch-type', 'EC2',
+            '--launch-type', LAUNCH_TYPE,
             '--output', 'json'
         ]
 
@@ -73,7 +76,7 @@ class TaskManager:
         print(exec_result)
         
         task_id = _get_arn_id(exec_result['tasks'][0]['taskArn'])
-        task_def_arn = _get_arn_id(exec_result['tasks'][0]['taskDefinitionArn'])
+        # task_def_arn = _get_arn_id(exec_result['tasks'][0]['taskDefinitionArn'])
         cluster_name = _get_arn_id(exec_result['tasks'][0]['clusterArn'])
         container_inst_id = _get_arn_id(exec_result['tasks'][0]['containerInstanceArn'])
 
@@ -141,7 +144,7 @@ class TaskManager:
             '--cluster', f'{os.environ['CLUSTER_NAME']}',
             '--task-definition', reg_result['taskDefinition']['taskDefinitionArn'],
             '--count', '1',
-            '--launch-type', 'EC2',
+            '--launch-type', LAUNCH_TYPE,
             '--output', 'json'
         ]
 
