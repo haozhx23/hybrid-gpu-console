@@ -3,6 +3,8 @@
     "taskRoleArn": "arn:aws:iam::633205212955:role/ec2-adm-role",
     "executionRoleArn": "arn:aws:iam::633205212955:role/ec2-adm-role",
     "networkMode": "host",
+    "ipcMode": "host",
+    "memory": "4096",
     "containerDefinitions": [],
     "volumes": [
         {
@@ -51,8 +53,6 @@
     "requiresCompatibilities": [
         "EC2"
     ],
-    "memory": "16384",
-    "ipcMode": "host",
     "runtimePlatform": {
         "cpuArchitecture": "X86_64",
         "operatingSystemFamily": "LINUX"

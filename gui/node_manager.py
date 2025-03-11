@@ -42,7 +42,7 @@ class NodeManager:
     def __init__(self):
         print('Node Manager initiated..')
         self.node_config = FileManager.load_yaml(os.environ['NODE_MAPPING_PATH'])
-
+        self.node_ibdev_str = os.environ.get('IB_DEV_LIST', "mlx5_10,mlx5_11,mlx5_12,mlx5_13")
         self.cluster_name = os.environ.get('CLUSTER_NAME', 'default-cluster')
         self.ecs_client = boto3.client('ecs')
         
@@ -151,6 +151,12 @@ class NodeManager:
 
     def get_node_address(self, node_name):
         return self.nodes.get(node_name).ip
+
+    def fetch_node_name(self, container_inst_id: str):
+        for node_name in self.nodes.keys():
+            if self.nodes[node_name].container_inst_id == container_inst_id:
+                return node_name
+        return None
 
     def get_node_status_display(self) -> List[List[str]]:
         """Get node status data for UI display, fetching from DDB"""

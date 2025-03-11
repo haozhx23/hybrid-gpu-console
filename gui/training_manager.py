@@ -66,86 +66,92 @@ class TrainingManager:
 
         return all_node_names
 
+    def assign_master_node(self):
+        master_node_name = self.node_manager.assign_a_node_name()
+        return master_node_name
 
 
-    def generate_node_scripts(self, 
-                              all_node_names, 
+    def generate_nodes_script(self, 
+                              node_name,
+                              num_nodes, 
                               master_port, 
                               user_script_path, 
                               exec_history_save_dir,
                               ui_task_config
                               ):
         
-        num_nodes = len(all_node_names)
-        master_node_addr = self.node_manager.get_node_address(all_node_names[0])
-
-        all_task_def_paths = []
-                    
-        for i, node_name in enumerate(all_node_names):
-            print(i, node_name)
-            
-            # assign node name and generate script
-            node_wrap_script_path = self.generate_node_training_script(
-                node_name, i, num_nodes, master_node_addr, master_port, user_script_path, exec_history_save_dir
-            )
-            print(i, node_wrap_script_path)
-            # node_task_def_path = self.generate_node_task_def(
-            #     task_def_template_path, node_name, node_wrap_script_path, ui_task_config, exec_history_save_dir
-            # )
-            
-            node_task_def_path = self.construct_node_task_def(node_name, i, master_port, node_wrap_script_path, ui_task_config, exec_history_save_dir)
-
-            # all_node_names.append(node_name)
-            all_task_def_paths.append(node_task_def_path)
-
-        return all_task_def_paths
+        # print('Assigned node name: ', node_name)
+        
+        script_content = self.command_generator.generate_dist_wrapper_script(num_nodes, 
+                                                                             master_port,
+                                                                             user_script_path,
+                                                                             exec_history_save_dir,
+                                                                             ui_task_config['traininghealth_check']
+                                                                             )
 
 
-    def run_all_tasks(self, 
+
+
+        # script_content = self.command_generator.generate_script_content(command)
+        # script_path = os.path.join(output_dir, f"training-{node_name}.sh")
+        wrap_script_path = os.path.join(exec_history_save_dir, f"training-rdzv.sh")
+        
+        FileManager.write_script(wrap_script_path, script_content)
+
+        node_task_def_path = self.construct_node_task_def(None, -99, master_port, wrap_script_path, ui_task_config, exec_history_save_dir)
+
+        return node_task_def_path
+
+    
+    def register_task_and_run_all(self, 
                       job_id,
                       job_timestamp,
-                      all_node_names, 
-                      all_task_def_paths,
+                      num_nodes,
+                      task_def_path,
                       exec_history_save_dir
-                      ):
+                    ):
         
-        num_nodes = len(all_node_names)
         all_commands = []
         container_inst_ids = []
         ecs_task_ids = []
-        
+        orch_node_names = []
 
-        for i, node_name in enumerate(all_node_names):
-            reg_task_cmd, exec_task_cmd, container_inst_id, ecs_task_id, cluster_name = self.register_execute_and_record(
-                                  job_id,
-                                  job_timestamp,
-                                  num_nodes,
-                                  node_name,
-                                  i,
-                                  all_task_def_paths[i]
-                                  )
-            
-            all_commands.append(reg_task_cmd)
+        task_def_arn, reg_task_cmd = TaskManager.task_register(task_def_path)
+        all_commands.append(reg_task_cmd)
+
+        for _ in range(num_nodes):
+            task_id, cluster_name, container_inst_id, exec_result, exec_task_cmd = TaskManager.task_exec(task_def_arn)
+
+            node_name_orchestrated = self.node_manager.fetch_node_name(container_inst_id)
+
+            TaskManager.record_task_to_ddb(
+                task_id = task_id,
+                node_name_orchestrated = node_name_orchestrated,
+                node_index = -1,
+                job_id = job_id,
+                job_timestamp = job_timestamp,
+                nnodes = num_nodes,
+                task_def_arn = task_def_arn,
+                cluster_name = cluster_name,
+                container_inst_id = container_inst_id,
+            )
+
             all_commands.append(exec_task_cmd)
             container_inst_ids.append(container_inst_id)
-            ecs_task_ids.append(ecs_task_id)
+            ecs_task_ids.append(task_id)
+            orch_node_names.append(node_name_orchestrated)
 
-        print('all_commands', all_commands)
         history_file = FileManager.create_execution_history(exec_history_save_dir, all_commands)
         print('history_file', history_file)
-
 
         ## if Each node is assigned a task, write to job
         if len(ecs_task_ids) == num_nodes:
             self.gather_task_and_record_job(
-                job_id, job_timestamp, cluster_name, num_nodes, all_node_names, container_inst_ids, ecs_task_ids
+                job_id, job_timestamp, cluster_name, num_nodes, orch_node_names, container_inst_ids, ecs_task_ids
             )
 
-            # for node_name in all_node_names:
-            #     self.node_manager.update_node_status(node_name, 'IN_PROGRESS')
+        return ecs_task_ids, orch_node_names, history_file
 
-        return ecs_task_ids, history_file
-        
 
     def gather_task_and_record_job(self, job_id, job_timestamp, cluster_name, num_nodes, assigned_nodes, container_inst_ids, ecs_task_ids):
         DynamoDBHandler.write_item(table_name = self.job_ddb_table_name, 
@@ -164,72 +170,15 @@ class TrainingManager:
                                     }
                                 )
 
-    
-    def register_execute_and_record(self, 
-                                  job_id,
-                                  job_timestamp,
-                                  nnodes,
-                                  node_name,
-                                  nodei,
-                                  task_def_path, 
-                                  ):
-
-        task_id, task_def_arn, cluster_name, container_inst_id, reg_result, exec_result, reg_task_cmd, exec_task_cmd = TaskManager.task_register_and_exec(task_def_path)
-
-        resp = DynamoDBHandler.write_item(table_name = self.task_ddb_table_name,
-                                    item = {
-                                    'ecs_task_id': task_id,
-                                    'node_name': node_name,
-                                    'node_index_in_job': nodei, #Decimal(rank),
-                                    'job_id': job_id,
-                                    'job_timestamp': job_timestamp,
-                                    'job_num_nodes': nnodes, #Decimal(nnodes),
-                                    'task_def_arn': task_def_arn,
-                                    'task_def_name': task_def_arn.split(':')[0],
-                                    'task_def_revision': task_def_arn.split(':')[-1],
-                                    'cluster_name': cluster_name,
-                                    'container_inst_id': container_inst_id,
-                                    # 'retry': 0,
-                                    # 'task_status': 'IN_PROGRESS',
-                                    'updated_at': datetime.now().isoformat(),
-                                    'created_at': datetime.now().isoformat(),
-                                    # 'metadata': _convert_floats_to_decimal({
-                                    #     'task_reg_result': reg_result,
-                                    #     'task_exec_result': exec_result
-                                    # })
-                                }
-                            )
-        
-        print('record task resp: ', resp)
-
-        return reg_task_cmd, exec_task_cmd, container_inst_id, task_id, cluster_name
-
-
-
-    def generate_node_training_script(self, node_name: str, noderank: int, num_nodes: int, master_addr: str, master_port: str, entry_script_path: str, output_dir: str) -> List[str]:
-        print('Assigned node name: ', node_name)
-        script_content = self.command_generator.generate_node_entry_script(
-            node_rank=noderank,
-            num_nodes=num_nodes,
-            master_addr=master_addr,
-            master_port=master_port,
-            entry_script_path=entry_script_path,
-            node_name=node_name
-        )
-
-        # script_content = self.command_generator.generate_script_content(command)
-        script_path = os.path.join(output_dir, f"training-{node_name}.sh")
-        
-        FileManager.write_script(script_path, script_content)
-        return script_path
-
+        return
 
 
     def construct_node_task_def(self, node_name: str, node_index: int, master_port: int, train_script_path: str, task_config: Dict[str, str], output_dir: str):
         
         ecs_task_def = self.task_manager.get_ecs_task_def()
         # ecs_task_def['family'] = task_config['family']
-        ecs_task_def['placementConstraints'] = [{"type": "memberOf","expression": f"attribute:node_name=={node_name}"}]
+
+        # ecs_task_def['placementConstraints'] = [{"type": "memberOf","expression": f"attribute:node_name=={node_name}"}]
         
 
         training_container_def = self.task_manager.get_training_container_def()
@@ -240,16 +189,18 @@ class TrainingManager:
         training_container_def['command'] = ['/workspace/'+train_script_path]
 
 
-        if task_config['traininghealth_check']:
-            health_container_def = self.health_manager.generate_healthcheck_container_def(node_index, dependent=True)
-            training_container_def['dependsOn'] = [{"containerName": health_container_def['name'], "condition": "COMPLETE"}]
-            training_container_def['essential'] = False
-            ecs_task_def['containerDefinitions'] = [health_container_def, training_container_def]
-        else:
-            ecs_task_def['containerDefinitions'] = [training_container_def]
+        # if task_config['traininghealth_check']:
+        #     health_container_def = self.health_manager.generate_healthcheck_container_def(node_index, dependent=True)
+        #     training_container_def['dependsOn'] = [{"containerName": health_container_def['name'], "condition": "COMPLETE"}]
+        #     training_container_def['essential'] = True
+        #     ecs_task_def['containerDefinitions'] = [health_container_def, training_container_def]
+        # else:
+        #     ecs_task_def['containerDefinitions'] = [training_container_def]
 
-        
-        node_task_def_path = os.path.join(output_dir, f"task_def_{node_name}.json")
+        ecs_task_def['containerDefinitions'] = [training_container_def]
+
+        # node_task_def_path = os.path.join(output_dir, f"task_def_{node_name}.json")
+        node_task_def_path = os.path.join(output_dir, f"task_def_rdzv.json")
         FileManager.save_json(node_task_def_path, ecs_task_def)
 
         return node_task_def_path

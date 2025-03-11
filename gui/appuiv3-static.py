@@ -81,20 +81,16 @@ class EnhancedTrainingGUI:
             job_id, exec_history_save_dir, job_timestamp = self._generate_job_id(base_job_name)
             
             progress(0.3, desc="Assigning nodes...")
-            # all_node_names = self._assign_job_nodes(num_nodes)
-            master_node_name = self._assign_job_master()
-            logger.info(f"Assigned master node: {master_node_name}")
+            all_node_names = self._assign_job_nodes(num_nodes)
+            logger.info(f"Assigned nodes: {all_node_names}")
             
             if health_check_checkbox:
                 progress(0.4, desc="Setting up health check...")
-                self._setup_health_check([])
+                self._setup_health_check(all_node_names)
             
             progress(0.5, desc="Generating task definitions...")
-
-
-            task_def_path = self._generate_nodes_script(
-                master_node_name,
-                num_nodes,
+            all_task_def_paths = self._generate_node_scripts(
+                all_node_names,
                 master_port,
                 user_script_path,
                 exec_history_save_dir,
@@ -102,12 +98,11 @@ class EnhancedTrainingGUI:
             )
             
             progress(0.7, desc="Launching training tasks...")
-            training_task_ids, orch_node_names, history_file_path = self._run_all_tasks(
+            training_task_ids, history_file_path = self._run_all_tasks(
                 job_id,
                 job_timestamp,
-                master_node_name,
-                num_nodes,
-                task_def_path,
+                all_node_names,
+                all_task_def_paths,
                 exec_history_save_dir
             )
             
@@ -115,8 +110,8 @@ class EnhancedTrainingGUI:
             self.node_manager.refresh_all_node_status()
             
             results = self._prepare_results(
-                orch_node_names,
-                task_def_path,
+                all_node_names,
+                all_task_def_paths,
                 training_task_ids,
                 history_file_path,
                 job_id
@@ -155,14 +150,6 @@ class EnhancedTrainingGUI:
             logger.error(f"Error assigning job nodes: {str(e)}", exc_info=True)
             raise RuntimeError(f"Failed to assign job nodes: {str(e)}")
 
-    def _assign_job_master(self) -> List[str]:
-        try:
-            return self.training_manager.assign_master_node()
-        except Exception as e:
-            logger.error(f"Error assigning job nodes: {str(e)}", exc_info=True)
-            raise RuntimeError(f"Failed to assign job nodes: {str(e)}")
-
-    
     def _setup_health_check(self, node_names: List[str]) -> None:
         try:
             self.health_manager.setup_connectivity_host_file(node_names)
@@ -170,42 +157,36 @@ class EnhancedTrainingGUI:
             logger.error(f"Error setting up health check: {str(e)}", exc_info=True)
             raise RuntimeError(f"Failed to setup health check: {str(e)}")
 
-
-    def _generate_nodes_script(self, 
-                             master_node_name: str,
-                             num_nodes: int,
+    def _generate_node_scripts(self, 
+                             node_names: List[str],
                              master_port: str,
                              user_script_path: str,
                              exec_history_save_dir: str,
                              ui_task_config: Dict[str, Any]) -> List[str]:
         try:
-            return self.training_manager.generate_nodes_script(
-                master_node_name,
-                num_nodes,
+            return self.training_manager.generate_node_scripts(
+                node_names,
                 master_port,
                 user_script_path,
                 exec_history_save_dir,
                 ui_task_config
             )
-
         except Exception as e:
             logger.error(f"Error generating node scripts: {str(e)}", exc_info=True)
             raise RuntimeError(f"Failed to generate node scripts: {str(e)}")
 
-
     def _run_all_tasks(self,
                      job_id: str,
                      job_timestamp: str,
-                     master_node_name: str,
-                     num_nodes: int,
-                     task_def_path: str,
+                     node_names: List[str],
+                     task_def_paths: List[str],
                      exec_history_save_dir: str) -> Tuple[List[str], str]:
         try:
-            return self.training_manager.register_task_and_run_all(
+            return self.training_manager.run_all_tasks(
                 job_id,
                 job_timestamp,
-                num_nodes,
-                task_def_path,
+                node_names,
+                task_def_paths,
                 exec_history_save_dir
             )
         except Exception as e:
@@ -214,16 +195,15 @@ class EnhancedTrainingGUI:
 
     def _prepare_results(self,
                        node_names: List[str],
-                       task_def_path: str,
+                       task_def_paths: List[str],
                        training_task_ids: List[str],
                        history_file_path: str,
                        job_id: str) -> List[str]:
         results = []
         
-        for i, node_name in enumerate(node_names):
-            results.append(f"\n🔷 Dispatched to Node: {node_name}")
-        
-        results.append(f"\n  └─ Register & Execute: `{task_def_path}`")
+        for i, node_task_def_path in enumerate(task_def_paths):
+            results.append(f"\n🔷 Node: {node_names[i]}")
+            results.append(f"\n  └─ Register & Execute: `{node_task_def_path}`")
 
         results.append(f"\n📝 Execution history saved to: `{history_file_path}`")
         results.append(f"\n🔍 Job ID: {job_id}")
@@ -994,7 +974,7 @@ def create_interface():
         
         with gr.Tabs() as tabs:
             # Launch Training Tab
-            with gr.TabItem("🚀 Training Job") as training_tab_item:
+            with gr.TabItem("🚀 Training Job"):
                 training_tab = ui_builder.build_training_tab()
 
             # Health Check Tab
@@ -1005,11 +985,6 @@ def create_interface():
             with gr.TabItem("📋 Job Status", elem_id="job_status_tab") as job_status_tab_item:
                 job_status_tab = ui_builder.build_job_status_tab()
         
-        training_tab_item.select(
-            fn=ui_builder._refresh_node_table,
-            outputs=[training_tab["node_status"]]
-        )
-
         job_status_tab_item.select(
             fn=ui_builder._refresh_job_table,
             outputs=[job_status_tab["job_status"]]

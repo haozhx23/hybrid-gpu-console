@@ -15,7 +15,7 @@
     "memoryReservation": 1024,
     "resourceRequirements": [
         {
-            "value": "4",
+            "value": "1",
             "type": "GPU"
         }
     ],

@@ -12,10 +12,10 @@
             "awslogs-stream-prefix": "ecs"
         }
     },
-    "memoryReservation": 8192,
+    "memoryReservation": 2048,
     "resourceRequirements": [
         {
-            "value": "4",
+            "value": "1",
             "type": "GPU"
         }
     ],

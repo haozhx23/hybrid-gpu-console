@@ -1,10 +1,13 @@
 #!/bin/bash
 
-export USER_NAME='cluster-user1'
-export USER_PASSWORD='abc123'
+export USER_NAME='a'
+export USER_PASSWORD='a'
+
+# export USER_NAME='cluster-user1'
+# export USER_PASSWORD='abc123'
 
 # Default prefill file
-export CLUSTER_NAME="nwcd-g5-v1"
+export CLUSTER_NAME="nwcd-l4-v1"
 export JOB_MANAGE_TABLE="$CLUSTER_NAME-jobs"
 export TASK_MANAGE_TABLE="$CLUSTER_NAME-tasks"
 # export NODE_MANAGE_TABLE="$CLUSTER_NAME-nodes"
@@ -18,6 +21,7 @@ export NODE_MAPPING_PATH="$ECS_CLUSTER_CONF_PATH/node_mapping_info.yaml"
 # Export prefill file path for GUI
 # export GUI_PREFILL_PATH="$ECS_CLUSTER_CONF_PATH/gui_prefill_4.yaml"
 
+export IB_DEV_LIST="mlx5_10,mlx5_11,mlx5_12,mlx5_13"
 
 # Generate port number using hour and minute without leading zeros
 # e.g., 06:09 -> 69, then add base port to ensure valid range

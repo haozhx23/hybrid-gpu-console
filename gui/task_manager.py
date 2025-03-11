@@ -4,6 +4,9 @@ import subprocess
 import json
 
 from file_manager import FileManager
+from ddb_handler import DynamoDBHandler
+from datetime import datetime
+
 
 
 def _run_aws_cli(cmd):
@@ -37,6 +40,88 @@ class TaskManager:
 
     def get_healthcheck_container_def(self):
         return self.healthcheck_container_def.copy()
+
+
+    @staticmethod
+    def task_register(task_def_path):
+        reg_task_cmd = [
+            'aws', 'ecs', 'register-task-definition',
+            '--cli-input-json', f'file://{task_def_path}',
+            '--output', 'json'
+        ]
+        
+        print(reg_task_cmd)
+        reg_result = _run_aws_cli(reg_task_cmd)
+        print(reg_result)
+
+        return reg_result['taskDefinition']['taskDefinitionArn'], reg_task_cmd
+
+
+    @staticmethod
+    def task_exec(task_def_arn):
+        exec_task_cmd = [
+            'aws', 'ecs', 'run-task',
+            '--cluster', f'{os.environ['CLUSTER_NAME']}',
+            '--task-definition', task_def_arn,
+            '--count', '1',
+            '--launch-type', 'EC2',
+            '--output', 'json'
+        ]
+
+        print(exec_task_cmd)
+        exec_result = _run_aws_cli(exec_task_cmd)
+        print(exec_result)
+        
+        task_id = _get_arn_id(exec_result['tasks'][0]['taskArn'])
+        task_def_arn = _get_arn_id(exec_result['tasks'][0]['taskDefinitionArn'])
+        cluster_name = _get_arn_id(exec_result['tasks'][0]['clusterArn'])
+        container_inst_id = _get_arn_id(exec_result['tasks'][0]['containerInstanceArn'])
+
+        return task_id, cluster_name, container_inst_id, exec_result, exec_task_cmd
+
+
+    @staticmethod
+    def record_task_to_ddb(task_id,
+                        node_name_orchestrated,
+                        node_index,
+                        job_id,
+                        job_timestamp,
+                        nnodes,
+                        task_def_arn,
+                        cluster_name,
+                        container_inst_id,
+                        # reg_result,
+                           ):
+        task_ddb_table_name = os.environ.get('TASK_MANAGE_TABLE')
+
+        resp = DynamoDBHandler.write_item(table_name = task_ddb_table_name,
+                                    item = {
+                                    'ecs_task_id': task_id,
+                                    'node_name': node_name_orchestrated,
+                                    'node_index_in_job': node_index, #Decimal(rank),
+                                    'job_id': job_id,
+                                    'job_timestamp': job_timestamp,
+                                    'job_num_nodes': nnodes, #Decimal(nnodes),
+                                    'task_def_arn': task_def_arn,
+                                    'task_def_name': task_def_arn.split(':')[0],
+                                    'task_def_revision': task_def_arn.split(':')[-1],
+                                    'cluster_name': cluster_name,
+                                    'container_inst_id': container_inst_id,
+                                    # 'retry': 0,
+                                    # 'task_status': 'IN_PROGRESS',
+                                    'updated_at': datetime.now().isoformat(),
+                                    'created_at': datetime.now().isoformat(),
+                                    # 'metadata': _convert_floats_to_decimal({
+                                    #     'task_reg_result': reg_result,
+                                    #     'task_exec_result': exec_result
+                                    # })
+                                }
+                            )
+        
+        print('record task resp: ', resp)
+
+
+
 
 
     @staticmethod
