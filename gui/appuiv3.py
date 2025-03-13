@@ -414,105 +414,10 @@ class EnhancedTrainingGUI:
             white-space: pre-wrap;
             word-break: break-word;
         }
-        """
-
-
-    def get_jobtab_css(self) -> str:
-        return """
-        /* Card layout */
-        .dashboard-card {
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            background-color: white;
-            margin-bottom: 20px;
-        }
-        
-        .card-title {
-            margin: 0;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eaeaea;
-            color: #333;
-        }
-        
-        /* Table styles */
-        .status-table table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 15px 0;
-        }
-        
-        .status-table th {
-            background-color: #f5f7fa;
-            color: #506690;
-            font-weight: 600;
-            text-align: left;
-            padding: 12px 15px;
-            border-bottom: 2px solid #e9ecef;
-        }
-        
-        .status-table td {
-            padding: 10px 15px;
-            border-bottom: 1px solid #e9ecef;
-        }
-        
-        .status-table tr:hover {
-            background-color: #f8f9fa;
-        }
-        
-        /* Status badges */
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.85em;
-            font-weight: 500;
-        }
-        
-        .status-running {
-            background-color: #e3f2fd;
-            color: #0d47a1;
-        }
-        
-        .status-stopped {
-            background-color: #ffebee;
-            color: #c62828;
-        }
-        
-        /* Button styles */
-        .action-button {
-            margin-left: auto;
-        }
-        
-        /* Log viewer */
-        .log-viewer {
-            height: 300px;
-            overflow-y: auto;
-            background-color: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 5px;
-            padding: 10px;
-            font-family: monospace;
-            white-space: pre-wrap;
-        }
-
-        .task-id-cell {
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .log-error {
-            color: #d32f2f;
-            background-color: #ffebee;
-            padding: 8px;
-            border-left: 4px solid #d32f2f;
-            margin: 8px 0;
+        .gray-text input {
+            color: #888888 !important;
         }
         """
-
-
-
 
 
 
@@ -618,7 +523,8 @@ class UIBuilder:
                 value=self.gui._get_env_var('ECS_CLUSTER_CONF_PATH', ''),
                 info="ECS Config file incl. task def. container def. and node info.",
                 label="ECS Config Files", 
-                interactive=False
+                interactive=False,
+                elem_classes="gray-text"
             )
             
             user_script_path = gr.Textbox(
@@ -626,7 +532,8 @@ class UIBuilder:
                 placeholder="train-ddp.sh",
                 value="train-ddp.sh",
                 info="Path to user defined entry script, e.g. pip and torchrun train.py",
-                container=False
+                container=False,
+                elem_classes="gray-text"
             )
         
         return {
@@ -1024,8 +931,6 @@ if __name__ == "__main__":
     # Get port from environment variable or use default
     port = int(os.environ.get('GRADIO_SERVER_PORT', DEFAULT_PORT))
 
-
-    
     # Launch the interface
     interface.launch(
         server_name="0.0.0.0",

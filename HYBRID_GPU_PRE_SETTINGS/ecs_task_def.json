@@ -1,5 +1,5 @@
 {
-    "family": "HybridGPU",
+    "family": "HybridGPUTraining",
     "taskRoleArn": "arn:aws:iam::633205212955:role/ec2-adm-role",
     "executionRoleArn": "arn:aws:iam::633205212955:role/ec2-adm-role",
     "networkMode": "host",

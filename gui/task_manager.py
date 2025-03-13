@@ -26,8 +26,8 @@ def _get_arn_id(arn):
     return arn.split('/')[-1]
 
 
-# LAUNCH_TYPE = 'EC2' # EC2 EXTERNAL
-LAUNCH_TYPE = 'EXTERNAL' # EC2 EXTERNAL
+LAUNCH_TYPE = 'EC2' # EC2 EXTERNAL
+# LAUNCH_TYPE = 'EXTERNAL' # EC2 EXTERNAL
 
 
 class TaskManager:
@@ -65,7 +65,7 @@ class TaskManager:
     def task_exec(task_def_arn):
         exec_task_cmd = [
             'aws', 'ecs', 'run-task',
-            '--cluster', f'{os.environ['CLUSTER_NAME']}',
+            '--cluster', os.environ['CLUSTER_NAME'],
             '--task-definition', task_def_arn,
             '--count', '1',
             '--launch-type', LAUNCH_TYPE,
@@ -142,7 +142,7 @@ class TaskManager:
 
         exec_task_cmd = [
             'aws', 'ecs', 'run-task',
-            '--cluster', f'{os.environ['CLUSTER_NAME']}',
+            '--cluster', os.environ['CLUSTER_NAME'],
             '--task-definition', reg_result['taskDefinition']['taskDefinitionArn'],
             '--count', '1',
             '--launch-type', LAUNCH_TYPE,
@@ -167,7 +167,7 @@ class TaskManager:
 
         stop_task_cmd = [
             'aws', 'ecs', 'stop-task',
-            '--cluster', f'{os.environ['CLUSTER_NAME']}',
+            '--cluster', os.environ['CLUSTER_NAME'],
             '--task', task_id,
             '--output', 'json'
         ]
@@ -189,7 +189,7 @@ class TaskManager:
         """
         describe_task_cmd = [
             'aws', 'ecs', 'describe-tasks',
-            '--cluster', f"{os.environ['CLUSTER_NAME']}",
+            '--cluster', os.environ['CLUSTER_NAME'],
             '--tasks', task_id,
             '--output', 'json'
         ]
