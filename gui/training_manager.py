@@ -72,12 +72,12 @@ class TrainingManager:
 
 
     def generate_nodes_script(self, 
-                              node_name,
                               num_nodes, 
                               master_port, 
                               user_script_path, 
                               exec_history_save_dir,
-                              ui_task_config
+                            #   ui_task_config
+                            is_health_check
                               ):
         
         # print('Assigned node name: ', node_name)
@@ -86,7 +86,7 @@ class TrainingManager:
                                                                              master_port,
                                                                              user_script_path,
                                                                              exec_history_save_dir,
-                                                                             ui_task_config['traininghealth_check']
+                                                                             is_health_check
                                                                              )
 
 
@@ -98,79 +98,11 @@ class TrainingManager:
         
         FileManager.write_script(wrap_script_path, script_content)
 
-        node_task_def_path = self.construct_node_task_def(None, -99, master_port, wrap_script_path, ui_task_config, exec_history_save_dir)
+        node_task_def_path = self.construct_node_task_def(None, -99, master_port, wrap_script_path, None, exec_history_save_dir)
 
         return node_task_def_path
 
     
-    def register_task_and_run_all(self, 
-                      job_id,
-                      job_timestamp,
-                      num_nodes,
-                      task_def_path,
-                      exec_history_save_dir
-                    ):
-        
-        all_commands = []
-        container_inst_ids = []
-        ecs_task_ids = []
-        orch_node_names = []
-
-        task_def_arn, reg_task_cmd = TaskManager.task_register(task_def_path)
-        all_commands.append(reg_task_cmd)
-
-        for _ in range(num_nodes):
-            task_id, cluster_name, container_inst_id, exec_result, exec_task_cmd = TaskManager.task_exec(task_def_arn)
-
-            node_name_orchestrated = self.node_manager.fetch_node_name(container_inst_id)
-
-            TaskManager.record_task_to_ddb(
-                task_id = task_id,
-                node_name_orchestrated = node_name_orchestrated,
-                node_index = -1,
-                job_id = job_id,
-                job_timestamp = job_timestamp,
-                nnodes = num_nodes,
-                task_def_arn = task_def_arn,
-                cluster_name = cluster_name,
-                container_inst_id = container_inst_id,
-            )
-
-            all_commands.append(exec_task_cmd)
-            container_inst_ids.append(container_inst_id)
-            ecs_task_ids.append(task_id)
-            orch_node_names.append(node_name_orchestrated)
-
-        history_file = FileManager.create_execution_history(exec_history_save_dir, all_commands)
-        print('history_file', history_file)
-
-        ## if Each node is assigned a task, write to job
-        if len(ecs_task_ids) == num_nodes:
-            self.gather_task_and_record_job(
-                job_id, job_timestamp, cluster_name, num_nodes, orch_node_names, container_inst_ids, ecs_task_ids
-            )
-
-        return ecs_task_ids, orch_node_names, history_file
-
-
-    def gather_task_and_record_job(self, job_id, job_timestamp, cluster_name, num_nodes, assigned_nodes, container_inst_ids, ecs_task_ids):
-        DynamoDBHandler.write_item(table_name = self.job_ddb_table_name, 
-                                    item = {
-                                        'job_id': job_id,
-                                        'job_timestamp': job_timestamp,
-                                        'cluster_name': cluster_name,
-                                        'num_nodes': num_nodes,
-                                        'assigned_nodes': assigned_nodes,
-                                        'submittd_container_inst_ids': container_inst_ids,
-                                        'submittd_ecs_task_ids': ecs_task_ids,
-                                        'updated_at': datetime.now().isoformat(),
-                                        'created_at': datetime.now().isoformat(),
-                                        'retry': 0,
-                                        'job_status': 'IN_PROGRESS',
-                                    }
-                                )
-
-        return
 
 
     def construct_node_task_def(self, node_name: str, node_index: int, master_port: int, train_script_path: str, task_config: Dict[str, str], output_dir: str):
@@ -215,3 +147,81 @@ class TrainingManager:
             "Execution History Directory": output_dir,
             "User Entry Script Path": os.path.basename(entry_script_path)
         }
+
+
+
+
+
+
+
+
+
+    # def register_task_and_run_all(self, 
+    #                   job_id,
+    #                   job_timestamp,
+    #                   num_nodes,
+    #                   task_def_path,
+    #                   exec_history_save_dir
+    #                 ):
+        
+    #     all_commands = []
+    #     container_inst_ids = []
+    #     ecs_task_ids = []
+    #     orch_node_names = []
+
+    #     task_def_arn, reg_task_cmd = TaskManager.task_register(task_def_path)
+    #     all_commands.append(reg_task_cmd)
+
+    #     for _ in range(num_nodes):
+    #         task_id, cluster_name, container_inst_id, exec_result, exec_task_cmd = TaskManager.task_exec(task_def_arn)
+
+    #         node_name_orchestrated = self.node_manager.fetch_node_name(container_inst_id)
+    #         print(f"Training task {task_id} launched for node {node_name_orchestrated}")
+
+    #         TaskManager.record_task_to_ddb(
+    #             task_id = task_id,
+    #             node_name_orchestrated = node_name_orchestrated,
+    #             node_index = -1,
+    #             job_id = job_id,
+    #             job_timestamp = job_timestamp,
+    #             nnodes = num_nodes,
+    #             task_def_arn = task_def_arn,
+    #             cluster_name = cluster_name,
+    #             container_inst_id = container_inst_id,
+    #         )
+
+    #         all_commands.append(exec_task_cmd)
+    #         container_inst_ids.append(container_inst_id)
+    #         ecs_task_ids.append(task_id)
+    #         orch_node_names.append(node_name_orchestrated)
+
+    #     history_file = FileManager.create_execution_history(exec_history_save_dir, all_commands)
+    #     print('history_file', history_file)
+
+    #     ## if Each node is assigned a task, write to job
+    #     if len(ecs_task_ids) == num_nodes:
+    #         self.gather_task_and_record_job(
+    #             job_id, job_timestamp, cluster_name, num_nodes, orch_node_names, container_inst_ids, ecs_task_ids
+    #         )
+
+    #     return ecs_task_ids, orch_node_names, history_file
+
+
+    # def gather_task_and_record_job(self, job_id, job_timestamp, cluster_name, num_nodes, assigned_nodes, container_inst_ids, ecs_task_ids):
+    #     DynamoDBHandler.write_item(table_name = self.job_ddb_table_name, 
+    #                                 item = {
+    #                                     'job_id': job_id,
+    #                                     'job_timestamp': job_timestamp,
+    #                                     'cluster_name': cluster_name,
+    #                                     'num_nodes': num_nodes,
+    #                                     'assigned_nodes': assigned_nodes,
+    #                                     'submittd_container_inst_ids': container_inst_ids,
+    #                                     'submittd_ecs_task_ids': ecs_task_ids,
+    #                                     'updated_at': datetime.now().isoformat(),
+    #                                     'created_at': datetime.now().isoformat(),
+    #                                     'retry': 0,
+    #                                     'job_status': 'IN_PROGRESS',
+    #                                 }
+    #                             )
+
+    #     return

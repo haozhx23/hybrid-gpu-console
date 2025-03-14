@@ -21,7 +21,8 @@ def demo_basic():
     dist.init_process_group("nccl")
     rank = dist.get_rank()
 
-    print(f"Start running basic DDP example on rank {rank}.")
+    WORLD_SIZE = int(os.environ['WORLD_SIZE'])
+    print(f"Start running basic DDP example on global rank {rank} in {WORLD_SIZE}.")
 
     # create model and move it to GPU with id rank
     device_id = rank % torch.cuda.device_count()
@@ -30,8 +31,8 @@ def demo_basic():
     loss_fn = nn.MSELoss()
     optimizer = optim.SGD(ddp_model.parameters(), lr=0.001)
 
-    for i in range(100):
-        print(f"step-{i}")
+    for i in range(20):
+        print(f"step-{i} on global rank {rank} in {WORLD_SIZE}")
         optimizer.zero_grad()
         outputs = ddp_model(torch.randn(20, 10))
         labels = torch.randn(20, 5).to(device_id)
@@ -40,7 +41,7 @@ def demo_basic():
     
     dist.destroy_process_group()
 
-    print(f"Finished running basic DDP example on rank {rank}.")
+    print(f"Finished running basic DDP example on global rank {rank} in {WORLD_SIZE}.")
 
 if __name__ == "__main__":
     demo_basic()

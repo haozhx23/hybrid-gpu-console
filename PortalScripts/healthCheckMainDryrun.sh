@@ -23,6 +23,8 @@ fi
 echo $(ls -al $DIST_CONFIG_PATH/my_hosts)
 
 
+sleep 15
+
 #At this point, it denotes the GPUs on this node are healthy, so put metric to Cloudwatch and delete the flag about GPU healthy in the SSM parameter store.
 GPU_health=1
 

@@ -8,15 +8,9 @@
     "containerDefinitions": [],
     "volumes": [
         {
-            "name": "mylustre",
-            "host": {
-                "sourcePath": "/fsx"
-            }
-        },
-        {
             "name": "workspace",
             "host": {
-                "sourcePath": "/fsx/ecs-gpu-console-v3"
+                "sourcePath": "/fsx/ecs-gpu-console-v4"
             }
         },
         {
@@ -47,6 +41,12 @@
             "name": "ssh-keys",
             "host": {
                 "sourcePath": "/fsx/.ssh"
+            }
+        },
+        {
+            "name": "mylustre",
+            "host": {
+                "sourcePath": "/fsx"
             }
         }
     ],

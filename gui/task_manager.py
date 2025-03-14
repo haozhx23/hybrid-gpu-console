@@ -5,6 +5,8 @@ import json
 
 from file_manager import FileManager
 from ddb_handler import DynamoDBHandler
+from node_manager import NodeManager
+
 from datetime import datetime
 
 
@@ -26,7 +28,7 @@ def _get_arn_id(arn):
     return arn.split('/')[-1]
 
 
-LAUNCH_TYPE = 'EC2' # EC2 EXTERNAL
+LAUNCH_TYPE = 'EXTERNAL' # EC2 EXTERNAL
 # LAUNCH_TYPE = 'EXTERNAL' # EC2 EXTERNAL
 
 
@@ -34,7 +36,9 @@ class TaskManager:
     def __init__(self):
         self.ecs_task_def = FileManager.load_json(os.environ['ECS_TASK_DEF'])
         self.training_container_def = FileManager.load_json(os.environ['TRAINING_CONTAINER_DEF'])
-        # self.healthcheck_container_def = FileManager.load_json(os.environ['HEALTH_CONTAINER_DEF'])
+        self.healthcheck_container_def = FileManager.load_json(os.environ['HEALTH_CONTAINER_DEF'])
+
+        self.node_manager = NodeManager()
 
     def get_ecs_task_def(self):
         return self.ecs_task_def.copy()
@@ -42,8 +46,8 @@ class TaskManager:
     def get_training_container_def(self):
         return self.training_container_def.copy()
 
-    # def get_healthcheck_container_def(self):
-    #     return self.healthcheck_container_def.copy()
+    def get_healthcheck_container_def(self):
+        return self.healthcheck_container_def.copy()
 
 
     @staticmethod
@@ -69,6 +73,28 @@ class TaskManager:
             '--task-definition', task_def_arn,
             '--count', '1',
             '--launch-type', LAUNCH_TYPE,
+            '--output', 'json'
+        ]
+
+        print(exec_task_cmd)
+        exec_result = _run_aws_cli(exec_task_cmd)
+        print(exec_result)
+        
+        task_id = _get_arn_id(exec_result['tasks'][0]['taskArn'])
+        # task_def_arn = _get_arn_id(exec_result['tasks'][0]['taskDefinitionArn'])
+        cluster_name = _get_arn_id(exec_result['tasks'][0]['clusterArn'])
+        container_inst_id = _get_arn_id(exec_result['tasks'][0]['containerInstanceArn'])
+
+        return task_id, cluster_name, container_inst_id, exec_result, exec_task_cmd
+
+    
+    @staticmethod
+    def task_start(task_def_arn, container_inst_id):
+        exec_task_cmd = [
+            'aws', 'ecs', 'start-task',
+            '--cluster', os.environ['CLUSTER_NAME'],
+            '--task-definition', task_def_arn,
+            '--container-instances', container_inst_id,
             '--output', 'json'
         ]
 
@@ -125,7 +151,56 @@ class TaskManager:
         print('record task resp: ', resp)
 
 
+    @staticmethod
+    def register_task_and_run_all(
+                      job_id,
+                      job_timestamp,
+                      num_nodes,
+                      task_def_path,
+                      exec_history_save_dir,
+                      container_instance_ids = None
+                    ):
+        
+        node_manager = NodeManager()
 
+        all_commands = []
+        container_inst_ids = []
+        ecs_task_ids = []
+        orch_node_names = []
+
+        task_def_arn, reg_task_cmd = TaskManager.task_register(task_def_path)
+        all_commands.append(reg_task_cmd)
+
+        for nodei in range(num_nodes):
+            if container_instance_ids is None:
+                task_id, cluster_name, container_inst_id, exec_result, exec_task_cmd = TaskManager.task_exec(task_def_arn)
+            else:
+                task_id, cluster_name, container_inst_id, exec_result, exec_task_cmd = TaskManager.task_start(task_def_arn, container_instance_ids[nodei])
+
+            node_name_orchestrated = node_manager.fetch_node_name(container_inst_id)
+            print(f"Training task {task_id} launched for node {node_name_orchestrated}")
+
+            TaskManager.record_task_to_ddb(
+                task_id = task_id,
+                node_name_orchestrated = node_name_orchestrated,
+                node_index = -1,
+                job_id = job_id,
+                job_timestamp = job_timestamp,
+                nnodes = num_nodes,
+                task_def_arn = task_def_arn,
+                cluster_name = cluster_name,
+                container_inst_id = container_inst_id,
+            )
+
+            all_commands.append(exec_task_cmd)
+            container_inst_ids.append(container_inst_id)
+            ecs_task_ids.append(task_id)
+            orch_node_names.append(node_name_orchestrated)
+
+        history_file = FileManager.create_execution_history(exec_history_save_dir, all_commands)
+        print('history_file', history_file)
+
+        return ecs_task_ids, orch_node_names, container_inst_ids, history_file
 
 
     @staticmethod
@@ -213,3 +288,46 @@ class TaskManager:
             return False
 
 
+    @staticmethod
+    def check_task_stop_status(task_id):
+        """
+        Check if an ECS task has stopped successfully.
+        
+        Args:
+            task_id (str): The ID of the task to check
+            
+        """
+        describe_task_cmd = [
+            'aws', 'ecs', 'describe-tasks',
+            '--cluster', os.environ['CLUSTER_NAME'],
+            '--tasks', task_id,
+            '--output', 'json'
+        ]
+        
+        try:
+            result = _run_aws_cli(describe_task_cmd)
+            
+            # Check if we got task information back
+            if not result.get('tasks'):
+                print(f"While check task stop status, task {task_id} not found")
+                return "NO_TASK"
+                
+            task = result['tasks'][0]
+            last_status = task.get('lastStatus')
+            
+            # First check if the task is actually stopped
+            if last_status != 'STOPPED':
+                return "RUNNING"
+                
+            # Check containers for exit codes
+            containers = task.get('containers', [])
+            for container in containers:
+                exit_code = container.get('exitCode')
+                if exit_code is None or exit_code != 0:
+                    return 'FAIL'
+
+            return 'SUCCESS'
+            
+        except Exception as e:
+            print(f"Error checking task status: {e}")
+            return False

@@ -62,6 +62,19 @@ class NodeManager:
         physical_available_node_names = self.get_physical_available_node_names()
         self.spare_nodes.update(physical_available_node_names)
 
+        self.healthcheck_locked_instances = set()
+
+
+    def lock_healthcheck_instances(self, container_inst_ids):
+        self.healthcheck_locked_instances.update(container_inst_ids)
+
+    def unlock_healthcheck_instances(self, container_inst_ids):
+        self.healthcheck_locked_instances.difference_update(container_inst_ids)
+
+    def clear_healthcheck_instances(self):
+        # self.healthcheck_locked_instances.difference_update(container_inst_ids)
+        self.healthcheck_locked_instances.clear()
+
     
     def get_physical_available_node_names(self) -> List[str]:
         self.refresh_all_node_status()
@@ -133,71 +146,12 @@ class NodeManager:
 
 
 
-
-    # # Update DYNAMIC node information from physical node status
-    # def refresh_all_node_status(self):
-    #     # self.cluster_name
-    #     # self.ecs_client
-
-    #     self.release_all_node_names()
-
-    #     container_instance_arns = []
-    #     paginator = self.ecs_client.get_paginator('list_container_instances')
-
-    #     for page in paginator.paginate(cluster=self.cluster_name):
-    #         container_instance_arns.extend(page['containerInstanceArns'])
-
-    #     if container_instance_arns:
-    #         desp_response = self.ecs_client.describe_container_instances(
-    #                 cluster=self.cluster_name,
-    #                 containerInstances=container_instance_arns,
-    #                 # include=['TAGS']  # Include tags in the response
-    #             )
-
-    #         for i, inst_arn in enumerate(container_instance_arns):
-
-    #             container_instance_id = inst_arn.split('/')[-1]
-    #             node_usable = False
-
-    #             for attrdict in desp_response['containerInstances'][i]['attributes']:
-    #                 if attrdict['name'] == 'Node':
-    #                     node_name = attrdict['value']
-    #                     if node_name in self.nodes.keys():
-    #                         self.nodes[node_name].container_inst_id = container_instance_id
-                
-
-    #             node_physical_status = desp_response['containerInstances'][i]['status']
-
-    #             for item in desp_response['containerInstances'][i]['registeredResources']:
-    #                 if item['name'] == 'GPU':
-    #                     registered_gpu = len(item['stringSetValue'])
-
-    #                     self.nodes[node_name].num_gpus = registered_gpu
-
-    #             for item in desp_response['containerInstances'][i]['remainingResources']:
-    #                 if item['name'] == 'GPU':
-    #                     remain_gpu = len(item['stringSetValue'])
-
-    #             if registered_gpu == remain_gpu and node_physical_status == 'ACTIVE':
-    #                 node_usable = True
-    #                 self.nodes[node_name].status = True
-    #             else:
-    #                 self.nodes[node_name].status = False
-    #                 self.spare_nodes.remove(node_name)
-
-    #             print(container_instance_id, node_name, node_physical_status, registered_gpu, remain_gpu, node_usable)
-        
-
-        
-
-    #     return
-
-    
     ## Node assignment during node assignment
     ## release above temperary status
     def release_all_node_names(self) -> None:
         self.assigned_nodes.clear()
-        self.spare_nodes = set()
+        self.healthcheck_lock_nodes.clear()
+        self.spare_nodes.clear()
         # self.refresh_all_node_status()
         # physical_available_node_names = self.get_physical_available_node_names()
         self.spare_nodes.update(self.nodes.keys())
@@ -210,9 +164,6 @@ class NodeManager:
         # self.update_node_status(node_name, UserNodeStatus.ASSIGNED.value)
         return node_name
 
-
-    # def get_ibdev_list(self, node_name: str) -> List[str]:
-    #     return self.nodes.get(node_name).ibdev
 
     def get_node_address(self, node_name):
         return self.nodes.get(node_name).ip
@@ -278,3 +229,68 @@ class NodeManager:
     #     if requested_nodes > len(self.nodes):
     #         return f"Error: Requested {requested_nodes} nodes but only {len(self.nodes)} available"
     #     return None
+
+
+
+
+    # # Update DYNAMIC node information from physical node status
+    # def refresh_all_node_status(self):
+    #     # self.cluster_name
+    #     # self.ecs_client
+
+    #     self.release_all_node_names()
+
+    #     container_instance_arns = []
+    #     paginator = self.ecs_client.get_paginator('list_container_instances')
+
+    #     for page in paginator.paginate(cluster=self.cluster_name):
+    #         container_instance_arns.extend(page['containerInstanceArns'])
+
+    #     if container_instance_arns:
+    #         desp_response = self.ecs_client.describe_container_instances(
+    #                 cluster=self.cluster_name,
+    #                 containerInstances=container_instance_arns,
+    #                 # include=['TAGS']  # Include tags in the response
+    #             )
+
+    #         for i, inst_arn in enumerate(container_instance_arns):
+
+    #             container_instance_id = inst_arn.split('/')[-1]
+    #             node_usable = False
+
+    #             for attrdict in desp_response['containerInstances'][i]['attributes']:
+    #                 if attrdict['name'] == 'Node':
+    #                     node_name = attrdict['value']
+    #                     if node_name in self.nodes.keys():
+    #                         self.nodes[node_name].container_inst_id = container_instance_id
+                
+
+    #             node_physical_status = desp_response['containerInstances'][i]['status']
+
+    #             for item in desp_response['containerInstances'][i]['registeredResources']:
+    #                 if item['name'] == 'GPU':
+    #                     registered_gpu = len(item['stringSetValue'])
+
+    #                     self.nodes[node_name].num_gpus = registered_gpu
+
+    #             for item in desp_response['containerInstances'][i]['remainingResources']:
+    #                 if item['name'] == 'GPU':
+    #                     remain_gpu = len(item['stringSetValue'])
+
+    #             if registered_gpu == remain_gpu and node_physical_status == 'ACTIVE':
+    #                 node_usable = True
+    #                 self.nodes[node_name].status = True
+    #             else:
+    #                 self.nodes[node_name].status = False
+    #                 self.spare_nodes.remove(node_name)
+
+    #             print(container_instance_id, node_name, node_physical_status, registered_gpu, remain_gpu, node_usable)
+        
+
+        
+
+    #     return
+
+    
+    # def get_ibdev_list(self, node_name: str) -> List[str]:
+    #     return self.nodes.get(node_name).ibdev

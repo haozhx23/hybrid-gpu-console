@@ -8,7 +8,7 @@ import boto3
 from datetime import datetime
 
 from file_manager import FileManager
-
+from dist_command_generator import DistCommandGenerator
 from task_manager import TaskManager
 
 
@@ -22,6 +22,7 @@ class HealthCheck:
 class HealthManager:
     def __init__(self):
         self.task_manager = TaskManager()
+        self.command_generator = DistCommandGenerator()
 
     
     def generate_healthcheck_savepath(self):
@@ -35,6 +36,49 @@ class HealthManager:
         hostfile_local_path = "/fsx/healthcheck/my_hosts"
         with open(hostfile_local_path, 'w') as f:
             f.write('\n'.join(hostname_list))
+
+
+
+    def generate_precheck_scripts(self, num_nodes, exec_history_save_dir, health_check):
+
+        dist_vars = self.command_generator.generate_dist_setting(
+                                num_nodes,
+                                exec_history_save_dir,
+                                health_check
+                                )
+
+        print("generate_precheck_scripts - ", num_nodes, exec_history_save_dir, health_check)
+
+        wrap_script_path = os.path.join(exec_history_save_dir, f"pre-health-dynamic.sh")
+        FileManager.write_script(wrap_script_path, '\n'.join(dist_vars))
+
+        precheck_task_def = self.generate_precheck_container_def(wrap_script_path)
+        precheck_task_def_path = os.path.join(exec_history_save_dir, f"pre-health-task-def.json")
+        FileManager.save_json(precheck_task_def_path, precheck_task_def)
+
+        return precheck_task_def_path
+
+
+        
+    def generate_precheck_container_def(self, precheck_script_path):
+        health_ecs_task_def = self.task_manager.get_ecs_task_def()
+
+        health_container_def = self.task_manager.get_healthcheck_container_def()
+        health_container_def['command'] = [f'/workspace/{precheck_script_path}']
+        health_container_def['essential'] = True
+
+        health_ecs_task_def['containerDefinitions'] = [health_container_def]
+
+        return health_ecs_task_def
+
+
+
+        
+
+
+
+
+    ####################################
 
 
     def generate_healthcheck_container_def(self, node_index, dependent=True):

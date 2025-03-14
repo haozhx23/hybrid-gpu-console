@@ -15,7 +15,7 @@ export TASK_MANAGE_TABLE="$CLUSTER_NAME-tasks"
 export ECS_CLUSTER_CONF_PATH="HYBRID_GPU_PRE_SETTINGS"
 export ECS_TASK_DEF="$ECS_CLUSTER_CONF_PATH/ecs_task_def.json"
 export TRAINING_CONTAINER_DEF="$ECS_CLUSTER_CONF_PATH/training_container_def.json"
-# export HEALTH_CONTAINER_DEF="$ECS_CLUSTER_CONF_PATH/healthcheck_container_def.json"
+export HEALTH_CONTAINER_DEF="$ECS_CLUSTER_CONF_PATH/healthcheck_container_def.json"
 export NODE_MAPPING_PATH="$ECS_CLUSTER_CONF_PATH/node_mapping_info.yaml"
 
 # Export prefill file path for GUI
@@ -48,5 +48,5 @@ echo "Starting Gradio interface on port: $PORT"
 # Choose interface version
 echo "Using UI appUI.py"
 # python gui/appui.py
-python gui/appuiv3.py
+python gui/appuiv4.py
 # python gui/appui-stl.py

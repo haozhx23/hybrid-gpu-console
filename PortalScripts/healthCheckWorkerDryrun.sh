@@ -9,6 +9,8 @@ echo "In Healthcheck Worker $SERVICE_NAME config path: $DIST_CONFIG_PATH"
 finish_file="$DIST_CONFIG_PATH/finish.txt"
 
 
+sleep 15
+
 i=0
 while [ ! -f "$finish_file" ]; do
     if [ $i -eq 5 ]; then

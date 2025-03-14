@@ -25,9 +25,11 @@ class FileManager:
     @staticmethod
     def write_script(path: str, content: str) -> None:
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, 'w') as f:
+        os.chmod(os.path.dirname(path), 0o777)
+        with open(path, 'a+') as f:
+            f.write('\n')
             f.write(content)
-        os.chmod(path, 0o755)
+        # os.chmod(path, 0o755)
 
     @staticmethod
     def create_execution_history(output_dir: str, commands: List[List[str]]) -> str:

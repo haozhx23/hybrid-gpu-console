@@ -6,7 +6,6 @@ import boto3, os
 from datetime import datetime
 from ddb_handler import DynamoDBHandler
 from task_manager import TaskManager
-from node_manager import NodeManager, UserNodeStatus
 
 
 
@@ -56,6 +55,29 @@ class JobManager:
         except Exception as e:
             print(f"Error updating job status in DDB: {str(e)}")
             return False
+
+
+    @staticmethod
+    def gather_task_and_record_job(job_id, job_timestamp, num_nodes, assigned_nodes, container_inst_ids, ecs_task_ids, JOB_STATUS):
+        
+        DynamoDBHandler.write_item(table_name = os.environ['JOB_MANAGE_TABLE'], 
+                                    item = {
+                                        'job_id': job_id,
+                                        'job_timestamp': job_timestamp,
+                                        'cluster_name': os.environ['CLUSTER_NAME'],
+                                        'num_nodes': num_nodes,
+                                        'assigned_nodes': assigned_nodes,
+                                        'submittd_container_inst_ids': container_inst_ids,
+                                        'submittd_ecs_task_ids': ecs_task_ids,
+                                        'updated_at': datetime.now().isoformat(),
+                                        'created_at': datetime.now().isoformat(),
+                                        'retry': 0,
+                                        # 'job_status': 'IN_PROGRESS',
+                                        'job_status': JOB_STATUS
+                                    }
+                                )
+
+        return
 
 
 
@@ -126,7 +148,7 @@ class JobManager:
                     job.get('job_timestamp', 'N/A'),
                     job.get('job_status', 'N/A'),
                     str(job.get('num_nodes', 0)),
-                    ','.join(job.get('submittd_ecs_task_ids', [])) if job.get('submittd_ecs_task_ids') else 'N/A'
+                    '\n'.join(job.get('submittd_ecs_task_ids', [])) if job.get('submittd_ecs_task_ids') else 'N/A'
                 ]
                 for job in latest_jobs
             ]
