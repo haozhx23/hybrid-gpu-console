@@ -28,7 +28,7 @@ def _get_arn_id(arn):
     return arn.split('/')[-1]
 
 
-LAUNCH_TYPE = 'EXTERNAL' # EC2 EXTERNAL
+LAUNCH_TYPE = 'EC2' # EC2 EXTERNAL
 # LAUNCH_TYPE = 'EXTERNAL' # EC2 EXTERNAL
 
 

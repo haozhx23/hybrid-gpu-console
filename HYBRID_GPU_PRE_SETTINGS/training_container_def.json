@@ -40,26 +40,6 @@
             "readOnly": false
         },
         {
-            "sourceVolume": "mylustremodel",
-            "containerPath": "/model_files",
-            "readOnly": false
-        },
-        {
-            "sourceVolume": "mylustredata",
-            "containerPath": "/data_files",
-            "readOnly": false
-        },
-        {
-            "sourceVolume": "instancelocalstorage",
-            "containerPath": "/local_data",
-            "readOnly": false
-        },
-        {
-            "sourceVolume": "healthcheck",
-            "containerPath": "/healthcheck",
-            "readOnly": false
-        },
-        {
             "sourceVolume": "ssh-keys",
             "containerPath": "/root/.ssh",
             "readOnly": true

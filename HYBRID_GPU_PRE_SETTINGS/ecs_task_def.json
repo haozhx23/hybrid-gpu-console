@@ -14,24 +14,6 @@
             }
         },
         {
-            "name": "mylustremodel",
-            "host": {
-                "sourcePath": "/fsx/modeldatas"
-            }
-        },
-        {
-            "name": "mylustredata",
-            "host": {
-                "sourcePath": "/fsx/datafiles"
-            }
-        },
-        {
-            "name": "instancelocalstorage",
-            "host": {
-                "sourcePath": "/home/node-user/local-data-test"
-            }
-        },
-        {
             "name": "healthcheck",
             "host": {
                 "sourcePath": "/fsx/healthcheck"
@@ -41,12 +23,6 @@
             "name": "ssh-keys",
             "host": {
                 "sourcePath": "/fsx/.ssh"
-            }
-        },
-        {
-            "name": "mylustre",
-            "host": {
-                "sourcePath": "/fsx"
             }
         }
     ],
