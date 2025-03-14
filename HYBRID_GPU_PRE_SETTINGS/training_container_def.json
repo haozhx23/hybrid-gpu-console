@@ -1,6 +1,6 @@
 {
     "name": "TrainingContainer",
-    "image": "763104351884.dkr.ecr.us-east-1.amazonaws.com/pytorch-training:2.5.1-gpu-py311-cu124-ubuntu22.04-ec2",
+    "image": "727897471807.dkr.ecr.cn-north-1.amazonaws.com.cn/pytorch-training:2.6.0-cpu-py312-ubuntu22.04-ec2",
     "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
@@ -8,14 +8,14 @@
             "mode": "non-blocking",
             "awslogs-create-group": "true",
             "max-buffer-size": "25m",
-            "awslogs-region": "us-east-1",
+            "awslogs-region": "cn-north-1",
             "awslogs-stream-prefix": "ecs"
         }
     },
-    "memoryReservation": 2048,
+    "memoryReservation": 8192,
     "resourceRequirements": [
         {
-            "value": "1",
+            "value": "8",
             "type": "GPU"
         }
     ],

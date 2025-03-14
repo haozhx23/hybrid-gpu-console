@@ -21,7 +21,7 @@ class UserNodeStatus(Enum):
 @dataclass
 class NodeInfo:
     name: str
-    ip: str
+    # ip: str
     # ibdev: List[str]
     num_gpus: int = 8
     status: bool = False
@@ -41,8 +41,9 @@ def singleton(cls):
 class NodeManager:
     def __init__(self):
         print('Node Manager initiated..')
-        self.node_config = FileManager.load_yaml(os.environ['NODE_MAPPING_PATH'])
+        # self.node_config = FileManager.load_yaml(os.environ['NODE_MAPPING_PATH'])
         self.node_ibdev_str = os.environ.get('IB_DEV_LIST', "mlx5_10,mlx5_11,mlx5_12,mlx5_13")
+        self.node_names = os.environ.get('NODE_NAME_LIST', "A800_node001,A800_node002").split(',')
         self.cluster_name = os.environ.get('CLUSTER_NAME', 'default-cluster')
         self.ecs_client = boto3.client('ecs')
         
@@ -50,10 +51,11 @@ class NodeManager:
         self.nodes = {
             name: NodeInfo(
                 name=name,
-                ip=info['ip']
+                # ip=info['ip']
                 # ibdev=info['ibdev']
             )
-            for name, info in self.node_config.items()
+            for name in self.node_names
+            # for name, info in self.node_config.items()
         }
 
         # self.refresh_all_node_status()
@@ -166,7 +168,7 @@ class NodeManager:
 
 
     def get_node_address(self, node_name):
-        return self.nodes.get(node_name).ip
+        return '.'.join(self.nodes.get(node_name).name.split('-')[1:5])
 
     def fetch_node_name(self, container_inst_id: str):
         for node_name in self.nodes.keys():

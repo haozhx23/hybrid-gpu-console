@@ -1,7 +1,7 @@
 {
     "family": "HybridGPUTraining",
-    "taskRoleArn": "arn:aws:iam::633205212955:role/ec2-adm-role",
-    "executionRoleArn": "arn:aws:iam::633205212955:role/ec2-adm-role",
+    "taskRoleArn": "arn:aws-cn:iam::455385591292:role/ecsanywhereTaskRole",
+    "executionRoleArn": "arn:aws-cn:iam::455385591292:role/ecsanywhereTaskExecutionRole",
     "networkMode": "host",
     "ipcMode": "host",
     "memory": "4096",
@@ -10,7 +10,7 @@
         {
             "name": "workspace",
             "host": {
-                "sourcePath": "/fsx/ecs-gpu-console-v4"
+                "sourcePath": "/fsx/hybrid-gpu-console"
             }
         },
         {
@@ -27,7 +27,7 @@
         }
     ],
     "requiresCompatibilities": [
-        "EC2"
+        "EXTERNAL"
     ],
     "runtimePlatform": {
         "cpuArchitecture": "X86_64",
