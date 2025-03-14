@@ -27,7 +27,7 @@
         }
     ],
     "entryPoint": ["/bin/sh"],
-    "command": ["AUTO_FILLIN"],
+    "command": ["AUTO_FILL"],
     "mountPoints": [
         {
             "sourceVolume": "workspace",
@@ -38,6 +38,11 @@
             "sourceVolume": "healthcheck",
             "containerPath": "/healthcheck",
             "readOnly": false
+        },
+        {
+            "sourceVolume": "ssh-keys",
+            "containerPath": "/root/.ssh",
+            "readOnly": true
         }
     ],
     "environment": [],
